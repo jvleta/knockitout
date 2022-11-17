@@ -1,97 +1,86 @@
-:root {
-  font-family: Inter, Avenir, Helvetica, Arial, sans-serif;
-  font-size: 16px;
-  line-height: 24px;
-  font-weight: 400;
-
-  color-scheme: light dark;
-  color: rgba(255, 255, 255, 0.87);
-  background-color: #242424;
-
-  font-synthesis: none;
-  text-rendering: optimizeLegibility;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-  -webkit-text-size-adjust: 100%;
+.todo-list-section {
+  /*brand colors*/
+  /*applied colors*/
+  /*section styles*/
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.3);
+  margin-left: auto;
+  margin-right: auto;
+  padding-left: 1rem;
 }
-
-a {
-  font-weight: 500;
-  color: #646cff;
-  text-decoration: inherit;
+.todo-list-section header {
+  padding-top: 0.5rem;
 }
-a:hover {
-  color: #535bf2;
+.todo-list-section .todo-list-inner-sec-wrap {
+  border-left: 0.3rem double red;
+  font-size: 20px;
+  font-family: 'Lato', sans-serif;
+  margin-left: 1rem;
+  padding-left: 1rem;
 }
-
-body {
-  margin: 0;
+@media screen and (min-width: 1024px) {
+  .todo-list-section {
+    width: 1024px;
+  }
+}
+.todo-list-section .todo-list {
+  list-style-type: none;
+  padding-left: 0;
+}
+.todo-list-section .task-text {
+  background-color: transparent;
+  border: none;
+  font-family: 'Shadows Into Light', cursive;
+  font-size: 1.5rem;
+  margin-right: 1rem;
+  transition: color 0.25s ease;
+}
+.todo-list-section .task-text:placeholder-shown {
+  border: thin solid red;
+}
+.todo-list-section .task-checkbox {
+  height: 20px;
+  margin-right: 0.75rem;
+  width: 20px;
+}
+.todo-list-section .todo-list li {
+  align-items: center;
+  border-bottom: thin solid blue;
   display: flex;
-  place-items: center;
-  min-width: 320px;
-  min-height: 100vh;
+  margin-left: -3.25rem;
+  padding: 0.25rem;
+  padding-left: 3rem;
+  width: 100%;
 }
-
-h1 {
-  font-size: 3.2em;
-  line-height: 1.1;
+.todo-list-section .task-checkbox,
+.todo-list-section .button--remove {
+  flex: 0 0 30px;
 }
-
-#app {
-  max-width: 1280px;
-  margin: 0 auto;
-  padding: 2rem;
-  text-align: center;
+.todo-list-section .task-text {
+  flex: 1 1 auto;
 }
-
-.logo {
-  height: 6em;
-  padding: 1.5em;
-  will-change: filter;
+.todo-list-section .todo-list li:first-of-type {
+  border-top: thin solid blue;
 }
-.logo:hover {
-  filter: drop-shadow(0 0 2em #646cffaa);
+.todo-list-section li.completed .task-text {
+  color: lightgrey;
+  text-decoration: line-through;
 }
-.logo.vanilla:hover {
-  filter: drop-shadow(0 0 2em #f7df1eaa);
+.todo-list-section .button {
+  border: none;
+  color: white;
+  font-weight: bold;
 }
-
-.card {
-  padding: 2em;
+.todo-list-section .button--add {
+  background-color: green;
+  font-size: 2rem;
+  margin-bottom: 2rem;
 }
-
-.read-the-docs {
-  color: #888;
+.todo-list-section .button--add:hover {
+  background-color: #00e600;
 }
-
-button {
-  border-radius: 8px;
-  border: 1px solid transparent;
-  padding: 0.6em 1.2em;
-  font-size: 1em;
-  font-weight: 500;
-  font-family: inherit;
-  background-color: #1a1a1a;
-  cursor: pointer;
-  transition: border-color 0.25s;
+.todo-list-section .button--remove {
+  background-color: red;
 }
-button:hover {
-  border-color: #646cff;
-}
-button:focus,
-button:focus-visible {
-  outline: 4px auto -webkit-focus-ring-color;
-}
-
-@media (prefers-color-scheme: light) {
-  :root {
-    color: #213547;
-    background-color: #ffffff;
-  }
-  a:hover {
-    color: #747bff;
-  }
-  button {
-    background-color: #f9f9f9;
-  }
+.todo-list-section .button--remove:hover {
+  background-color: #ff6666;
 }

@@ -1,13 +1,63 @@
-<!DOCTYPE html>
-<html lang="en">
+<html>
   <head>
-    <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Vite App</title>
+    <title>KnockoutJS To Do List</title>
+    <link
+      href="https://fonts.googleapis.com/css?family=Lato:400,700,700i|Shadows+Into+Light"
+      rel="stylesheet"
+    />
+    <script type="module" src="/main.js"></script>
   </head>
   <body>
-    <div id="app"></div>
-    <script type="module" src="/main.js"></script>
+    <section class="todo-list-section">
+      <div class="todo-list-inner-sec-wrap">
+        <header>
+          <h1>Things to Do</h1>
+        </header>
+        <div class="todo-list-wrapper">
+          <ul class="todo-list" data-bind="foreach: toDoItems">
+            <li data-bind="css: {completed: isCompleted}">
+              <input
+                class="task-checkbox"
+                type="checkbox"
+                data-bind="checked: isCompleted"
+                title="Mark task completed"
+              />
+              <input
+                class="task-text"
+                data-bind="value: task, attr: { 'placeholder': 'Enter a new task' }"
+              />
+              <button
+                class="button button--remove"
+                data-bind="click: $root.removeTodoItem"
+                title="Remove Item"
+              >
+                X
+              </button>
+            </li>
+          </ul>
+          <button
+            class="button button--add"
+            data-bind="click: addTodoItem"
+            title="Add a new task"
+          >
+            +
+          </button>
+          <!-- <button
+            class="button button--add"
+            data-bind="click: loadTodoItems"
+            title="Load tasks"
+          >
+            Load
+          </button> -->
+          <button
+            class="button button--add"
+            data-bind="click: saveTodoItems"
+            title="Save tasks"
+          >
+            Save
+          </button>
+        </div>
+      </div>
+    </section>
   </body>
 </html>
