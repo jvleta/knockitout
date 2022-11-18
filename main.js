@@ -33,11 +33,8 @@ function ListViewModel() {
   const docRef = doc(db, "todos", "iGWnr6GGZgrTHiikeC4N");
     
   self.toDoItems = ko.observableArray([
-    new ToDoItem("Walk the dog", false),
-    new ToDoItem("Do more stuff", false),
-    new ToDoItem("Some stuff that's done", true),
   ]);
-
+  
   self.addTodoItem = function () {
     self.toDoItems.push(new ToDoItem("", false));
   };
@@ -46,28 +43,23 @@ function ListViewModel() {
     self.toDoItems.remove(todoItem);
   };
 
-  // self.loadTodoItems = async function() {
-  //   const querySnapshot = await getDoc(docRef);    
-  //   const data = querySnapshot.data().data;
-  //   console.log(this.toDoItems());
-  //   const todos = data.map(item => new ToDoItem(item.description, item.completed));
-  //   self.toDoItems = ko.observableArray(todos);
-  // }
+  self.loadTodoItems = async function() {
+    const querySnapshot = await getDoc(docRef);    
+    const data = querySnapshot.data().data;
+    console.log(this.toDoItems());
+    this.toDoItems.removeAll();
+
+    data.forEach(item => {
+      self.toDoItems.push(new ToDoItem(item.description, item.completed));
+    });
+  }
 
   self.saveTodoItems = async function() {
     console.log(self.toDoItems());
+
     try {
       await updateDoc(docRef, {
-        data: [
-          {
-            description: "this is a task",
-            completed: true
-          },
-          {
-            description: "this is another task",
-            completed: false
-          }
-        ]
+        data: self.toDoItems().map(item => { return {completed: item.isCompleted(), description: item.task()}})
       }, {merge: true}
       );
       console.log("Document written with ID: ", docRef.id);
