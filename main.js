@@ -1,13 +1,12 @@
+import ko from "knockout";
 import { initializeApp } from "firebase/app";
 import {
-  doc,
-  collection,
-  addDoc,
-  getFirestore,
-  updateDoc,
-  getDocs,
-  getDoc,
-} from "firebase/firestore";
+  getAuth,
+  signInWithPopup,
+  GoogleAuthProvider,
+  onAuthStateChanged,
+} from "firebase/auth";
+import { doc, getFirestore, updateDoc, getDoc } from "firebase/firestore";
 
 const firebaseConfig = {
   apiKey: "AIzaSyAeZdcYt6MKmhRef2QwVYr33GJZ258cKsM",
@@ -21,15 +20,67 @@ const firebaseConfig = {
 
 // Initialize Firebase
 const app = initializeApp(firebaseConfig);
-
-// Initialize Cloud Firestore and get a reference to the service
+const auth = getAuth(app);
 const db = getFirestore(app);
 
-import ko from "knockout";
+let userInfo = {
+  name: null,
+  id: null,
+};
+
+onAuthStateChanged(auth, (user) => {
+  if (user) {
+    userInfo.id = user.uid;
+    userInfo.name = user.displayName;
+    console.log(userInfo);
+  } else {
+    userInfo.id = null;
+    userInfo.name = null;
+  }
+});
 
 function ToDoItem(task, isCompleted) {
   this.task = ko.observable(task);
   this.isCompleted = ko.observable(isCompleted);
+}
+
+function UserInfoViewModel() {
+  let self = this;
+
+  self.isLoggedIn = kos.observable(false);
+  self.username = ko.observable();
+  self.id = ko.observable();
+
+  self.loginUser = function () {
+    const provider = new GoogleAuthProvider();
+    signInWithPopup(auth, provider)
+      .then((result) => {
+        // This gives you a Google Access Token. You can use it to access the Google API.
+        const credential = GoogleAuthProvider.credentialFromResult(result);
+        const token = credential.accessToken;
+        // The signed-in user info.
+        const user = result.user;
+        console.log(user);
+        // ...
+      })
+      .catch((error) => {
+        // Handle Errors here.
+        const errorCode = error.code;
+        const errorMessage = error.message;
+        // The email of the user's account used.
+        const email = error.customData.email;
+        // The AuthCredential type that was used.
+        const credential = GoogleAuthProvider.credentialFromError(error);
+        // ...
+      });
+  };
+  self.logoutUser = function () {
+    signOut(auth).then(() => {
+      // Sign-out successful.
+    }).catch((error) => {
+      // An error happened.
+    });
+  };
 }
 
 function ListViewModel() {
@@ -82,27 +133,4 @@ function ListViewModel() {
 }
 
 ko.applyBindings(new ListViewModel());
-
-import knockout1 from './images/knockout1.gif';
-import knockout2 from './images/knockout2.gif';
-import knockout3 from './images/knockout3.gif';
-import knockout4 from './images/knockout4.gif';
-import knockout5 from './images/knockout5.gif';
-import knockout6 from './images/knockout6.gif';
-import knockout7 from './images/knockout7.gif';
-import knockout8 from './images/knockout8.gif';
-import knockout9 from './images/knockout9.gif';
-import knockout10 from './images/knockout10.gif';
-
-const dostuff = () => {
-  
-
-  window.setInterval(function(){
-    const index = Math.floor(Math.random() * 5) + 1;
-    const imageContainer = document.getElementById("knockouts");
-    imagefile = images[index];
-    imageContainer.innerHTML = `<p><img src=${imagefile} width="500" height="500"></p>`
-  }, 5000);   
-}
-const images = [knockout1, knockout2, knockout3, knockout4, knockout5];
-export default images;
+ko.applyBindings(new UserInfoViewModel());
