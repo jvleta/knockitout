@@ -13,8 +13,9 @@
         <header>
           <h1>Knock some sh!t out</h1>
         </header>
+        <div data-bind="text: signUp.userName"></div>
         <div class="todo-list-wrapper">
-          <ul class="todo-list" data-bind="foreach: toDoItems">
+          <ul class="todo-list" data-bind="foreach: toDoList.toDoItems">
             <li data-bind="css: {completed: isCompleted}">
               <input
                 class="task-checkbox"
@@ -28,7 +29,7 @@
               />
               <button
                 class="button button--remove"
-                data-bind="click: $root.removeTodoItem"
+                data-bind="click: $root.toDoList.removeTodoItem"
                 title="Remove Item"
               >
                 X
@@ -37,7 +38,7 @@
           </ul>
           <button
             class="button button--add"
-            data-bind="click: addTodoItem"
+            data-bind="click: toDoList.addTodoItem"
             title="Add a new task"
           >
             +
@@ -51,7 +52,7 @@
           </button> -->
           <button
             class="button button--add"
-            data-bind="click: saveTodoItems"
+            data-bind="click: toDoList.saveTodoItems"
             title="Save tasks"
           >
             Save
