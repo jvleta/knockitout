@@ -1,6 +1,6 @@
 import ko from "knockout";
-import getFirebase from "./firebase.js";
 import { doc, updateDoc, getDoc } from "firebase/firestore";
+import { getFirebase } from "./firebase.js";
 
 const { db } = getFirebase();
 
@@ -11,24 +11,24 @@ function ToDoItem(task, isCompleted) {
 
 function ToDoListViewModel() {
   const self = this;
+  
+  self.uid = ko.observable("");
+  self.toDoItems = ko.observableArray([]);
 
   const docRef = doc(db, "todos", "iGWnr6GGZgrTHiikeC4N");
 
   self.loadTodoItems = function () {
     const docRef = doc(db, "todos", "iGWnr6GGZgrTHiikeC4N");
-    let todos = ko.observableArray([]);
     getDoc(docRef).then((querySnapshot) => {
       const data = querySnapshot.data().data;
-      console.log(this.toDoItems());
       data.forEach((item) => {
-        todos.push(new ToDoItem(item.description, item.completed));
+        self.toDoItems.push(new ToDoItem(item.description, item.completed));
       });
     });
-
-    return todos;
   };
 
   self.addTodoItem = function () {
+    console.log('trying to add a todo item');
     self.toDoItems.push(new ToDoItem("", false));
   };
 
@@ -54,8 +54,6 @@ function ToDoListViewModel() {
       console.error("Error adding document: ", e);
     }
   };
-
-  self.toDoItems = self.loadTodoItems();
 }
 
 export default ToDoListViewModel;

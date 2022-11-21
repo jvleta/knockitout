@@ -14,6 +14,19 @@
           <h1>Knock some sh!t out</h1>
         </header>
         <div data-bind="text: signUp.userName"></div>
+
+        <!-- ko ifnot: signUp.isLoggedIn -->
+        <button data-bind="click: signUp.signInUser" title="sign in user">
+          login
+        </button>
+        <!-- /ko -->
+
+        <!-- ko if: signUp.isLoggedIn -->
+        <button data-bind="click: signUp.signOutUser" title="sign out a user">
+          logout
+        </button>
+        <!-- /ko -->
+
         <div class="todo-list-wrapper">
           <ul class="todo-list" data-bind="foreach: toDoList.toDoItems">
             <li data-bind="css: {completed: isCompleted}">
@@ -50,6 +63,7 @@
           >
             Load
           </button> -->
+          <!-- ko if: signUp.isLoggedIn -->
           <button
             class="button button--add"
             data-bind="click: toDoList.saveTodoItems"
@@ -57,6 +71,7 @@
           >
             Save
           </button>
+          <!-- /ko -->
         </div>
       </div>
     </section>
