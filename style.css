@@ -1,86 +1,15 @@
-.todo-list-section {
-  /*brand colors*/
-  /*applied colors*/
-  /*section styles*/
-  box-shadow: 0 0 10px rgba(0, 0, 0, 0.3);
-  margin-left: auto;
-  margin-right: auto;
-  padding-left: 1rem;
+.task-text {
+  width: 300px;
+  height: auto;
 }
-.todo-list-section header {
-  padding-top: 0.5rem;
+
+.header-container {
+  display: grid;
+  grid-template-columns: 3fr 1fr;
+  border-bottom-style: solid;
+  border-bottom-color: black;
 }
-.todo-list-section .todo-list-inner-sec-wrap {
-  border-left: 0.3rem double red;
-  font-size: 20px;
-  font-family: 'Lato', sans-serif;
-  margin-left: 1rem;
-  padding-left: 1rem;
-}
-@media screen and (min-width: 1024px) {
-  .todo-list-section {
-    width: 1024px;
-  }
-}
-.todo-list-section .todo-list {
-  list-style-type: none;
-  padding-left: 0;
-}
-.todo-list-section .task-text {
-  background-color: transparent;
-  border: none;
-  font-family: 'Shadows Into Light', cursive;
-  font-size: 1.5rem;
-  margin-right: 1rem;
-  transition: color 0.25s ease;
-}
-.todo-list-section .task-text:placeholder-shown {
-  border: thin solid red;
-}
-.todo-list-section .task-checkbox {
-  height: 20px;
-  margin-right: 0.75rem;
-  width: 20px;
-}
-.todo-list-section .todo-list li {
-  align-items: center;
-  border-bottom: thin solid blue;
-  display: flex;
-  margin-left: -3.25rem;
-  padding: 0.25rem;
-  padding-left: 3rem;
-  width: 100%;
-}
-.todo-list-section .task-checkbox,
-.todo-list-section .button--remove {
-  flex: 0 0 30px;
-}
-.todo-list-section .task-text {
-  flex: 1 1 auto;
-}
-.todo-list-section .todo-list li:first-of-type {
-  border-top: thin solid blue;
-}
-.todo-list-section li.completed .task-text {
-  color: lightgrey;
-  text-decoration: line-through;
-}
-.todo-list-section .button {
-  border: none;
-  color: white;
-  font-weight: bold;
-}
-.todo-list-section .button--add {
-  background-color: green;
-  font-size: 2rem;
-  margin-bottom: 2rem;
-}
-.todo-list-section .button--add:hover {
-  background-color: #00e600;
-}
-.todo-list-section .button--remove {
-  background-color: red;
-}
-.todo-list-section .button--remove:hover {
-  background-color: #ff6666;
+
+.app-title {
+  font-size: 30px;
 }

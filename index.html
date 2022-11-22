@@ -1,32 +1,39 @@
 <html>
   <head>
     <title>knock it out</title>
-    <link
-      href="https://fonts.googleapis.com/css?family=Lato:400,700,700i|Shadows+Into+Light"
-      rel="stylesheet"
-    />
     <script type="module" src="/main.js"></script>
+    <link rel="stylesheet" href="/style.css" />
   </head>
   <body>
-    <section class="todo-list-section">
+    <div class="todo-list-div">
       <div class="todo-list-inner-sec-wrap">
         <header>
-          <h1>Knock some sh!t out</h1>
+          <div class="header-container">
+            <div class="header-child"><div class="app-title">Knock some sh!t out</div></div>
+            <div class="header-child">
+              <!-- ko ifnot: signUp.isLoggedIn -->
+              <button data-bind="click: signUp.signInUser" title="sign in user">
+                login
+              </button>
+              <!-- /ko -->
+
+              <!-- ko if: signUp.isLoggedIn -->
+              <button
+                data-bind="click: signUp.signOutUser"
+                title="sign out a user"
+              >
+                logout
+              </button>
+              <!-- /ko -->
+              <div data-bind="text: signUp.userName">
+            </div>
+            
+
+
+              
+            </div>
+          </div>
         </header>
-        <div data-bind="text: signUp.userName"></div>
-
-        <!-- ko ifnot: signUp.isLoggedIn -->
-        <button data-bind="click: signUp.signInUser" title="sign in user">
-          login
-        </button>
-        <!-- /ko -->
-
-        <!-- ko if: signUp.isLoggedIn -->
-        <button data-bind="click: signUp.signOutUser" title="sign out a user">
-          logout
-        </button>
-        <!-- /ko -->
-
         <div class="todo-list-wrapper">
           <ul class="todo-list" data-bind="foreach: toDoList.toDoItems">
             <li data-bind="css: {completed: isCompleted}">
@@ -74,8 +81,8 @@
           <!-- /ko -->
         </div>
       </div>
-    </section>
-    <section id="knockouts"></section>
+    </div>
+    <div id="knockouts"></div>
   </body>
   <script type="module">
     import knockout1 from "./images/knockout1.gif";
