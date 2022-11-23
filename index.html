@@ -9,8 +9,11 @@
       <div class="todo-list-inner-sec-wrap">
         <header>
           <div class="header-container">
-            <div class="header-child"><div class="app-title">Knock some sh!t out</div></div>
             <div class="header-child">
+              <div class="app-title">Knock some sh!t out</div>
+            </div>
+            <div class="header-child">
+              
               <!-- ko ifnot: signUp.isLoggedIn -->
               <button data-bind="click: signUp.signInUser" title="sign in user">
                 login
@@ -25,12 +28,9 @@
                 logout
               </button>
               <!-- /ko -->
-              <div data-bind="text: signUp.userName">
-            </div>
+
+              <div data-bind="text: signUp.userName"></div>
             
-
-
-              
             </div>
           </div>
         </header>
@@ -45,7 +45,7 @@
               />
               <input
                 class="task-text"
-                data-bind="value: task, attr: { 'placeholder': 'Enter a new task' }"
+                data-bind="css: { 'completed-task' : isCompleted}, value: task, attr: { 'placeholder': 'Enter a new task' }"
               />
               <button
                 class="button button--remove"
