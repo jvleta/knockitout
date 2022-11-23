@@ -1,5 +1,5 @@
 .task-text {
-  width: 300px;
+  width: 500px;
   height: auto;
 }
 
@@ -12,4 +12,8 @@
 
 .app-title {
   font-size: 30px;
+}
+
+.completed-task {
+  text-decoration: line-through;
 }
