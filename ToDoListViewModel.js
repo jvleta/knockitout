@@ -12,6 +12,12 @@ import knockout7 from "./images/knockout7.gif";
 import knockout8 from "./images/knockout8.gif";
 import knockout9 from "./images/knockout9.gif";
 import knockout10 from "./images/knockout10.gif";
+import knockout11 from "./images/knockout11.gif";
+import knockout12 from "./images/knockout12.gif";
+import knockout13 from "./images/knockout13.gif";
+import knockout14 from "./images/knockout14.gif";
+import knockout15 from "./images/knockout15.gif";
+
 const images = [
   knockout1,
   knockout2,
@@ -23,6 +29,11 @@ const images = [
   knockout8,
   knockout9,
   knockout10,
+  knockout11,
+  knockout12,
+  knockout13,
+  knockout14,
+  knockout15,
 ];
 
 const { db } = getFirebase();
@@ -32,18 +43,19 @@ function ToDoItem(task, isCompleted) {
   self.task = ko.observable(task);
   self.isCompleted = ko.observable(isCompleted);
 
-  self.completeTask = function () {
-    console.log("i did my best");
-    const modal = document.getElementById("modal-one");
-    modal.classList.add("open");
-    const index = Math.floor(Math.random() * 10) + 1;
-    console.log(index);
-    const imageContainer = document.getElementById("knockouts");
-    const imagefile = images[index];
-    imageContainer.innerHTML = `<p><img src=${imagefile} width="500" height="500"></p>`;
-    setTimeout(() => {
-      modal.classList.remove("open");
-    }, 3000);
+  self.completeTask = function () {    
+    if (this.isCompleted()) {
+      const modal = document.getElementById("modal-one");
+      modal.classList.add("open");
+      const index = Math.floor(Math.random() * images.length) + 1;
+      console.log(index);
+      const imageContainer = document.getElementById("knockouts");
+      const imagefile = images[index];
+      imageContainer.innerHTML = `<p><img src=${imagefile} width="500" height="500"></p>`;
+      setTimeout(() => {
+        modal.classList.remove("open");
+      }, 3000);
+    }
     return true;
   };
 }
