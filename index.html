@@ -40,7 +40,7 @@
               <input
                 class="task-checkbox"
                 type="checkbox"
-                data-bind="checked: isCompleted"
+                data-bind="checked: isCompleted, click: $data.completeTask, clickBubble: false"
                 title="Mark task completed"
               />
               <input
@@ -82,36 +82,13 @@
         </div>
       </div>
     </div>
-    <div id="knockouts"></div>
+    
+    <div class="modal" id="modal-one">
+      <div class="modal-bg modal-exit"></div>
+      <div class="modal-container">
+        <div id="knockouts"></div>
+      </div>
+    </div>
+
   </body>
-  <script type="module">
-    import knockout1 from "./images/knockout1.gif";
-    import knockout2 from "./images/knockout2.gif";
-    import knockout3 from "./images/knockout3.gif";
-    import knockout4 from "./images/knockout4.gif";
-    import knockout5 from "./images/knockout5.gif";
-    import knockout6 from "./images/knockout6.gif";
-    import knockout7 from "./images/knockout7.gif";
-    import knockout8 from "./images/knockout8.gif";
-    import knockout9 from "./images/knockout9.gif";
-    import knockout10 from "./images/knockout10.gif";
-    const images = [
-      knockout1,
-      knockout2,
-      knockout3,
-      knockout4,
-      knockout5,
-      knockout6,
-      knockout7,
-      knockout8,
-      knockout9,
-      knockout10,
-    ];
-    window.setInterval(function () {
-      const index = Math.floor(Math.random() * 10) + 1;
-      const imageContainer = document.getElementById("knockouts");
-      const imagefile = images[index];
-      imageContainer.innerHTML = `<p><img src=${imagefile} width="500" height="500"></p>`;
-    }, 5000);
-  </script>
 </html>
