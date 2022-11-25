@@ -40,7 +40,7 @@
               <input
                 class="task-checkbox"
                 type="checkbox"
-                data-bind="checked: isCompleted"
+                data-bind="checked: isCompleted, click: completeTask, clickBubble: false"
                 title="Mark task completed"
               />
               <input
@@ -82,7 +82,14 @@
         </div>
       </div>
     </div>
-    <div id="knockouts"></div>
+    
+    <div class="modal" id="modal-one">
+      <div class="modal-bg modal-exit"></div>
+      <div class="modal-container">
+        <div id="knockouts"></div>
+      </div>
+    </div>
+
   </body>
   <script type="module">
     import knockout1 from "./images/knockout1.gif";
@@ -107,11 +114,5 @@
       knockout9,
       knockout10,
     ];
-    window.setInterval(function () {
-      const index = Math.floor(Math.random() * 10) + 1;
-      const imageContainer = document.getElementById("knockouts");
-      const imagefile = images[index];
-      imageContainer.innerHTML = `<p><img src=${imagefile} width="500" height="500"></p>`;
-    }, 5000);
   </script>
 </html>
