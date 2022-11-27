@@ -1,5 +1,5 @@
 import ko from "knockout";
-import { signInWithPopup, signOut, GoogleAuthProvider } from "firebase/auth";
+import { signInWithPopup, signInWithRedirect, signOut, GoogleAuthProvider } from "firebase/auth";
 import { getFirebase } from "./firebase.js";
 
 const { auth } = getFirebase();
@@ -12,6 +12,8 @@ const SignUpViewModel = function () {
   self.isLoggedIn = ko.observable(false);
 
   self.signInUser = function () {
+    // signInWithRedirect(auth, provider);
+
     signInWithPopup(auth, provider)
       .then((result) => {
         // This gives you a Google Access Token. You can use it to access the Google API.

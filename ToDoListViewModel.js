@@ -38,12 +38,11 @@ const images = [
 
 const { db } = getFirebase();
 
-function ToDoItem(task, isCompleted) {
-  self = this;
-  self.task = ko.observable(task);
-  self.isCompleted = ko.observable(isCompleted);
+export function ToDoItem(task, isCompleted) {
+  this.task = ko.observable(task);
+  this.isCompleted = ko.observable(isCompleted);
 
-  self.completeTask = function () {    
+  this.completeTask = function () {    
     if (this.isCompleted()) {
       const modal = document.getElementById("modal-one");
       modal.classList.add("open");
@@ -60,7 +59,7 @@ function ToDoItem(task, isCompleted) {
   };
 }
 
-function ToDoListViewModel() {
+export function ToDoListViewModel() {
   const self = this;
 
   self.uid = ko.observable("");
@@ -107,5 +106,3 @@ function ToDoListViewModel() {
     }
   };
 }
-
-export default ToDoListViewModel;

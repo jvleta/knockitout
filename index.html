@@ -13,28 +13,44 @@
               <div class="app-title">Knock some sh!t out</div>
             </div>
             <div class="header-child">
+
               
-              <!-- ko ifnot: signUp.isLoggedIn -->
-              <button data-bind="click: signUp.signInUser" title="sign in user">
-                login
-              </button>
-              <!-- /ko -->
+              <div class="login-container">
 
-              <!-- ko if: signUp.isLoggedIn -->
-              <button
-                data-bind="click: signUp.signOutUser"
-                title="sign out a user"
-              >
-                logout
-              </button>
-              <!-- /ko -->
+                <div class="login-child">
+                  <div
+                    class="user-name"
+                    data-bind="text: signUp.userName"
+                  ></div>
+                </div>
+                <div class="login-child">
+                  <!-- ko ifnot: signUp.isLoggedIn -->
+                  <button
+                    data-bind="click: signUp.signInUser"
+                    title="sign in user"
+                  >
+                    login
+                  </button>
+                  <!-- /ko -->
 
-              <div data-bind="text: signUp.userName"></div>
-            
+                  <!-- ko if: signUp.isLoggedIn -->
+                  <button
+                    data-bind="click: signUp.signOutUser"
+                    title="sign out a user"
+                  >
+                    logout
+                  </button>
+                  <!-- /ko -->
+                </div>
+
+
+
+              </div>
+
             </div>
           </div>
         </header>
-        <div class="todo-list-wrapper">
+        <div class="content">
           <ul class="todo-list" data-bind="foreach: toDoList.toDoItems">
             <li data-bind="css: {completed: isCompleted}">
               <input
@@ -55,34 +71,39 @@
                 X
               </button>
             </li>
+            <li></li>
           </ul>
-          <button
-            class="button button--add"
-            data-bind="click: toDoList.addTodoItem"
-            title="Add a new task"
-          >
-            +
-          </button>
-          <!-- <button
+          <ul>
+            <li>
+              <button
+                class="button button--add"
+                data-bind="click: toDoList.addTodoItem"
+                title="Add a new task"
+              >
+                +
+              </button>
+              <!-- <button
             class="button button--add"
             data-bind="click: loadTodoItems"
             title="Load tasks"
           >
             Load
           </button> -->
-          <!-- ko if: signUp.isLoggedIn -->
-          <button
-            class="button button--add"
-            data-bind="click: toDoList.saveTodoItems"
-            title="Save tasks"
-          >
-            Save
-          </button>
-          <!-- /ko -->
+              <!-- ko if: signUp.isLoggedIn -->
+              <button
+                class="save-button"
+                data-bind="click: toDoList.saveTodoItems"
+                title="Save tasks"
+              >
+                Save
+              </button>
+              <!-- /ko -->
+            </li>
+          </ul>
         </div>
       </div>
     </div>
-    
+
     <div class="modal" id="modal-one">
       <div class="modal-bg modal-exit"></div>
       <div class="modal-container">
@@ -90,5 +111,8 @@
       </div>
     </div>
 
+    <!-- <footer class="footer">
+      &copy; 2022 Leta Technology
+    </footer> -->
   </body>
 </html>

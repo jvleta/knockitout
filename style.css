@@ -1,6 +1,24 @@
+* {
+  list-style-type: none; /* Remove bullets */
+  font-family: Roboto, "Helvetica Neue", Arial, sans-serif;
+}
+
+.content {
+  max-width: 1000px;
+  margin: auto;
+  flex: 1 0 auto;
+}
+
+.footer {
+  flex-shrink: 0;
+}
+
 .task-text {
-  width: 500px;
-  height: auto;
+  width: 750px;
+  padding: 12px 20px;
+  margin: 8px 0;
+  box-sizing: border-box;
+  font-size: 18px;
 }
 
 .header-container {
@@ -10,18 +28,17 @@
   border-bottom-color: black;
 }
 
+.login-container {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+}
+
 .app-title {
   font-size: 30px;
 }
 
 .completed-task {
   text-decoration: line-through;
-}
-
-* {
-  margin: 0;
-  padding: 0;
-  font-family: Roboto, "Helvetica Neue", Arial, sans-serif;
 }
 
 .container {
@@ -70,4 +87,11 @@
   position: relative;
   padding: 30px;
 }
+
+button {
+  font-size: 20px;
+}
+
+.user-name {
+  font-size: 24px;
 }
