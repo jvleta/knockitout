@@ -47,9 +47,9 @@ export function ToDoItem(task, isCompleted) {
       const modal = document.getElementById("modal-one");
       modal.classList.add("open");
       const index = Math.floor(Math.random() * images.length) + 1;
-      console.log(index);
       const imageContainer = document.getElementById("knockouts");
-      const imagefile = images[index];
+      const imagefile = images[index-1];
+      console.log(index, imagefile);
       imageContainer.innerHTML = `<p><img src=${imagefile} width="500" height="500"></p>`;
       setTimeout(() => {
         modal.classList.remove("open");

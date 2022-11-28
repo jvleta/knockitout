@@ -13,10 +13,7 @@
               <div class="app-title">Knock some sh!t out</div>
             </div>
             <div class="header-child">
-
-              
               <div class="login-container">
-
                 <div class="login-child">
                   <div
                     class="user-name"
@@ -42,11 +39,7 @@
                   </button>
                   <!-- /ko -->
                 </div>
-
-
-
               </div>
-
             </div>
           </div>
         </header>
@@ -54,7 +47,7 @@
           <ul class="todo-list" data-bind="foreach: toDoList.toDoItems">
             <li data-bind="css: {completed: isCompleted}">
               <input
-                class="task-checkbox"
+                class="task-checkbox larger"
                 type="checkbox"
                 data-bind="checked: isCompleted, click: $data.completeTask, clickBubble: false"
                 title="Mark task completed"
@@ -68,7 +61,7 @@
                 data-bind="click: $root.toDoList.removeTodoItem"
                 title="Remove Item"
               >
-                X
+                x
               </button>
             </li>
             <li></li>
@@ -111,8 +104,8 @@
       </div>
     </div>
 
-    <!-- <footer class="footer">
-      &copy; 2022 Leta Technology
-    </footer> -->
+    <div class="footer">
+      <p>&copy; 2022 <a href="mailto:jimmy.leta@gmail.com">Jimmy Leta</a></p>
+    </div>
   </body>
 </html>
