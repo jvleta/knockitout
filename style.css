@@ -101,9 +101,8 @@ button {
 }
 
 .footer {
-  border-color: black;
-  border-style: solid;
-  position: fixed;
+  border-top-color: black;
+  border-top-style: solid;
   left: 0;
   bottom: 0;
   width: 100%;
