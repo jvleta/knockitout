@@ -1,49 +1,67 @@
-import ko from "knockout";
-import { signInWithPopup, signInWithRedirect, signOut, GoogleAuthProvider } from "firebase/auth";
+import {
+  signInWithPopup,
+  signInWithRedirect,
+  signOut,
+  GoogleAuthProvider,
+} from "firebase/auth";
 import { getFirebase } from "./firebase.js";
 
 const { auth } = getFirebase();
 const provider = new GoogleAuthProvider();
 
-const SignUpViewModel = function () {
-  let self = this;
+class SignUpViewModel {
+  constructor() {
+    this.userName = null;
+    this.isLoggedIn = false;
 
-  self.userName = ko.observable(null);
-  self.isLoggedIn = ko.observable(false);
+    // Initialize DOM elements
+    this.userNameEl = document.getElementById("user-name"); // Element where username will be displayed
+    this.loginStatusEl = document.getElementById("login-status"); // Element where login status will be displayed
+    this.updateDOM();
+  }
 
-  self.signInUser = function () {
-    // signInWithRedirect(auth, provider);
+  updateDOM() {
+    // Update DOM based on the current state
+    if (this.userNameEl) this.userNameEl.textContent = this.userName || "Guest";
+    if (this.loginStatusEl)
+      this.loginStatusEl.textContent = this.isLoggedIn
+        ? "Logged In"
+        : "Logged Out";
+  }
 
+  signInUser() {
     signInWithPopup(auth, provider)
       .then((result) => {
-        // This gives you a Google Access Token. You can use it to access the Google API.
-        const credential = GoogleAuthProvider.credentialFromResult(result);
-        const token = credential.accessToken;
-        // The signed-in user info.
         const user = result.user;
-        // ...
+        this.userName = user.displayName;
+        this.isLoggedIn = true;
+        this.updateDOM();
       })
       .catch((error) => {
-        // Handle Errors here.
-        const errorCode = error.code;
-        const errorMessage = error.message;
-        // The email of the user's account used.
-        const email = error.customData.email;
-        // The AuthCredential type that was used.
-        const credential = GoogleAuthProvider.credentialFromError(error);
-        // ...
+        console.error("Sign-in error:", error.message);
       });
-  };
+  }
 
-  self.signOutUser = function () {
+  signOutUser() {
     signOut(auth)
       .then(() => {
-        // Sign-out successful.
+        this.userName = null;
+        this.isLoggedIn = false;
+        this.updateDOM();
       })
       .catch((error) => {
-        // An error happened.
+        console.error("Sign-out error:", error.message);
       });
-  };
-};
+  }
+}
+
+// Usage example
+const signUpViewModel = new SignUpViewModel();
+document
+  .getElementById("sign-in-btn")
+  .addEventListener("click", () => signUpViewModel.signInUser());
+document
+  .getElementById("sign-out-btn")
+  .addEventListener("click", () => signUpViewModel.signOutUser());
 
 export default SignUpViewModel;
