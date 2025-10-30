@@ -1,4 +1,3 @@
-import ko from "knockout";
 import { doc, updateDoc, getDoc } from "firebase/firestore";
 import { getFirebase } from "./firebase.js";
 
@@ -38,71 +37,182 @@ const images = [
 
 const { db } = getFirebase();
 
-export function ToDoItem(task, isCompleted) {
-  this.task = ko.observable(task);
-  this.isCompleted = ko.observable(isCompleted);
+const TODO_DOC_ID = "iGWnr6GGZgrTHiikeC4N";
 
-  this.completeTask = function () {    
-    if (this.isCompleted()) {
-      const modal = document.getElementById("modal-one");
-      modal.classList.add("open");
-      const index = Math.floor(Math.random() * images.length) + 1;
-      const imageContainer = document.getElementById("knockouts");
-      const imagefile = images[index-1];
-      console.log(index, imagefile);
-      imageContainer.innerHTML = `<p><img src=${imagefile} width="500" height="500"></p>`;
-      setTimeout(() => {
-        modal.classList.remove("open");
-      }, 3000);
+const cloneItem = (item) => ({
+  description: item.description || "",
+  completed: Boolean(item.completed),
+});
+
+export const createTodoList = ({
+  listElement,
+  modalElement,
+  imageContainer,
+}) => {
+  const state = {
+    uid: "",
+    items: [],
+    listElement,
+    modalElement,
+    imageContainer,
+  };
+
+  const showKnockoutImage = () => {
+    if (!state.modalElement || !state.imageContainer) {
+      return;
     }
-    return true;
+
+    const index = Math.floor(Math.random() * images.length);
+    const imageFile = images[index];
+
+    state.imageContainer.innerHTML = `<p><img src="${imageFile}" width="500" height="500" /></p>`;
+    state.modalElement.classList.add("open");
+
+    setTimeout(() => {
+      state.modalElement.classList.remove("open");
+    }, 3000);
   };
-}
 
-export function ToDoListViewModel() {
-  const self = this;
+  const render = () => {
+    if (!state.listElement) {
+      return;
+    }
 
-  self.uid = ko.observable("");
-  self.toDoItems = ko.observableArray([]);
+    state.listElement.innerHTML = "";
 
-  const docRef = doc(db, "todos", "iGWnr6GGZgrTHiikeC4N");
+    const fragment = document.createDocumentFragment();
 
-  self.loadTodoItems = function () {
-    const docRef = doc(db, "todos", "iGWnr6GGZgrTHiikeC4N");
-    getDoc(docRef).then((querySnapshot) => {
-      const data = querySnapshot.data().data;
-      data.forEach((item) => {
-        self.toDoItems.push(new ToDoItem(item.description, item.completed));
+    state.items.forEach((item, index) => {
+      const li = document.createElement("li");
+
+      if (item.completed) {
+        li.classList.add("completed");
+      }
+
+      const checkbox = document.createElement("input");
+      checkbox.className = "task-checkbox larger";
+      checkbox.type = "checkbox";
+      checkbox.checked = item.completed;
+      checkbox.title = "Mark task completed";
+      checkbox.addEventListener("change", () => {
+        toggleItemCompletion(index, checkbox.checked);
       });
+
+      const input = document.createElement("input");
+      input.className = "task-text";
+      input.placeholder = "Enter a new task";
+      input.value = item.description;
+      if (item.completed) {
+        input.classList.add("completed-task");
+      }
+      input.addEventListener("input", (event) => {
+        updateItemDescription(index, event.target.value);
+      });
+
+      const removeButton = document.createElement("button");
+      removeButton.className = "button button--remove";
+      removeButton.textContent = "x";
+      removeButton.title = "Remove Item";
+      removeButton.addEventListener("click", () => {
+        removeTodoItem(index);
+      });
+
+      li.appendChild(checkbox);
+      li.appendChild(input);
+      li.appendChild(removeButton);
+
+      fragment.appendChild(li);
     });
+
+    state.listElement.appendChild(fragment);
   };
 
-  self.addTodoItem = function () {
-    console.log("trying to add a todo item");
-    self.toDoItems.push(new ToDoItem("", false));
+  const setUid = (uid) => {
+    state.uid = uid || "";
   };
 
-  self.completeTask = function (todoItem) {};
-  self.removeTodoItem = function (todoItem) {
-    self.toDoItems.remove(todoItem);
+  const setItems = (items) => {
+    state.items = items.map(cloneItem);
+    render();
   };
 
-  self.saveTodoItems = async function () {
-    console.log(self.toDoItems());
+  const addTodoItem = () => {
+    state.items.push({ description: "", completed: false });
+    render();
+  };
+
+  const removeTodoItem = (index) => {
+    state.items.splice(index, 1);
+    render();
+  };
+
+  const updateItemDescription = (index, description) => {
+    if (state.items[index]) {
+      state.items[index].description = description;
+    }
+  };
+
+  const toggleItemCompletion = (index, isCompleted) => {
+    if (!state.items[index]) {
+      return;
+    }
+
+    state.items[index].completed = isCompleted;
+
+    if (isCompleted) {
+      showKnockoutImage();
+    }
+
+    render();
+  };
+
+  const loadTodoItems = async () => {
+    try {
+      const docRef = doc(db, "todos", TODO_DOC_ID);
+      const snapshot = await getDoc(docRef);
+      const data = snapshot.exists() ? snapshot.data()?.data ?? [] : [];
+      setItems(data.map(cloneItem));
+    } catch (error) {
+      console.error("Error loading todo items", error);
+      setItems([]);
+    }
+  };
+
+  const saveTodoItems = async () => {
+    const docRef = doc(db, "todos", TODO_DOC_ID);
 
     try {
       await updateDoc(
         docRef,
         {
-          data: self.toDoItems().map((item) => {
-            return { completed: item.isCompleted(), description: item.task() };
-          }),
+          data: state.items.map((item) => ({
+            completed: item.completed,
+            description: item.description,
+          })),
         },
         { merge: true }
       );
       console.log("Document written with ID: ", docRef.id);
-    } catch (e) {
-      console.error("Error adding document: ", e);
+    } catch (error) {
+      console.error("Error saving todo items", error);
     }
   };
-}
+
+  const getTodoItems = () =>
+    state.items.map((item) => ({
+      completed: item.completed,
+      description: item.description,
+    }));
+
+  return {
+    setUid,
+    setItems,
+    addTodoItem,
+    removeTodoItem,
+    updateItemDescription,
+    toggleItemCompletion,
+    loadTodoItems,
+    saveTodoItems,
+    getTodoItems,
+  };
+};

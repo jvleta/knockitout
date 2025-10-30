@@ -15,82 +15,42 @@
             <div class="header-child">
               <div class="login-container">
                 <div class="login-child">
-                  <div
-                    class="user-name"
-                    data-bind="text: signUp.userName"
-                  ></div>
+                  <div class="user-name" id="user-name"></div>
                 </div>
                 <div class="login-child">
-                  <!-- ko ifnot: signUp.isLoggedIn -->
-                  <button
-                    data-bind="click: signUp.signInUser"
-                    title="sign in user"
-                  >
+                  <button id="login-button" title="sign in user">
                     login
                   </button>
-                  <!-- /ko -->
-
-                  <!-- ko if: signUp.isLoggedIn -->
                   <button
-                    data-bind="click: signUp.signOutUser"
+                    id="logout-button"
+                    class="is-hidden"
                     title="sign out a user"
                   >
                     logout
                   </button>
-                  <!-- /ko -->
                 </div>
               </div>
             </div>
           </div>
         </header>
         <div class="content">
-          <ul class="todo-list" data-bind="foreach: toDoList.toDoItems">
-            <li data-bind="css: {completed: isCompleted}">
-              <input
-                class="task-checkbox larger"
-                type="checkbox"
-                data-bind="checked: isCompleted, click: $data.completeTask, clickBubble: false"
-                title="Mark task completed"
-              />
-              <input
-                class="task-text"
-                data-bind="css: { 'completed-task' : isCompleted}, value: task, attr: { 'placeholder': 'Enter a new task' }"
-              />
-              <button
-                class="button button--remove"
-                data-bind="click: $root.toDoList.removeTodoItem"
-                title="Remove Item"
-              >
-                x
-              </button>
-            </li>
-            <li></li>
-          </ul>
+          <ul class="todo-list" id="todo-list"></ul>
           <ul>
             <li>
               <button
                 class="button button--add"
-                data-bind="click: toDoList.addTodoItem"
+                id="add-button"
                 title="Add a new task"
               >
                 +
               </button>
-              <!-- <button
-            class="button button--add"
-            data-bind="click: loadTodoItems"
-            title="Load tasks"
-          >
-            Load
-          </button> -->
-              <!-- ko if: signUp.isLoggedIn -->
               <button
-                class="save-button"
-                data-bind="click: toDoList.saveTodoItems"
+                class="save-button is-hidden"
+                id="save-button"
                 title="Save tasks"
               >
                 Save
               </button>
-              <!-- /ko -->
             </li>
           </ul>
         </div>

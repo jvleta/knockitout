@@ -41,6 +41,10 @@
   text-decoration: line-through;
 }
 
+.is-hidden {
+  display: none !important;
+}
+
 .container {
   display: flex;
   align-items: center;
