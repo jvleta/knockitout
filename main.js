@@ -16,7 +16,6 @@ const init = () => {
   const loginButton = document.getElementById("login-button");
   const logoutButton = document.getElementById("logout-button");
   const addButton = document.getElementById("add-button");
-  const saveButton = document.getElementById("save-button");
   const listElement = document.getElementById("todo-list");
   const modalElement = document.getElementById("modal-one");
   const imageContainer = document.getElementById("knockouts");
@@ -31,9 +30,8 @@ const init = () => {
     userNameElement.textContent = "";
     loginButton.classList.remove("is-hidden");
     logoutButton.classList.add("is-hidden");
-    saveButton.classList.add("is-hidden");
     toDoList.setUid("");
-    toDoList.setItems(DEFAULT_ITEMS);
+    toDoList.setItems(DEFAULT_ITEMS, { triggerSave: false });
   };
 
   onAuthStateChanged(auth, (user) => {
@@ -42,9 +40,8 @@ const init = () => {
       userNameElement.textContent = `User: ${user.displayName || "Anonymous"}`;
       loginButton.classList.add("is-hidden");
       logoutButton.classList.remove("is-hidden");
-      saveButton.classList.remove("is-hidden");
       toDoList.setUid(user.uid);
-      toDoList.setItems([]);
+      toDoList.setItems([], { triggerSave: false });
       toDoList
         .loadTodoItems()
         .catch((error) => console.error("Error loading todos", error));
@@ -68,10 +65,6 @@ const init = () => {
 
   addButton.addEventListener("click", () => {
     toDoList.addTodoItem();
-  });
-
-  saveButton.addEventListener("click", () => {
-    toDoList.saveTodoItems();
   });
 
   // Show default items before auth state resolves.

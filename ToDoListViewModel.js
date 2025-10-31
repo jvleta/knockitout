@@ -38,6 +38,7 @@ const images = [
 const { db } = getFirebase();
 
 const TODO_DOC_ID = "iGWnr6GGZgrTHiikeC4N";
+const AUTOSAVE_DELAY_MS = 800;
 
 const cloneItem = (item) => ({
   description: item.description || "",
@@ -55,6 +56,75 @@ export const createTodoList = ({
     listElement,
     modalElement,
     imageContainer,
+  };
+
+  let saveTimeoutId = null;
+  let isSaving = false;
+  let pendingSave = false;
+
+  const cancelPendingSave = () => {
+    if (saveTimeoutId) {
+      clearTimeout(saveTimeoutId);
+      saveTimeoutId = null;
+    }
+    pendingSave = false;
+  };
+
+  const persistTodoItems = async () => {
+    const docRef = doc(db, "todos", TODO_DOC_ID);
+
+    try {
+      await updateDoc(
+        docRef,
+        {
+          data: state.items.map((item) => ({
+            completed: item.completed,
+            description: item.description,
+          })),
+        },
+        { merge: true }
+      );
+      console.log("Document written with ID: ", docRef.id);
+    } catch (error) {
+      console.error("Error saving todo items", error);
+    }
+  };
+
+  const triggerSave = async () => {
+    if (!state.uid) {
+      return;
+    }
+
+    if (isSaving) {
+      pendingSave = true;
+      return;
+    }
+
+    isSaving = true;
+    try {
+      await persistTodoItems();
+    } finally {
+      isSaving = false;
+      if (pendingSave) {
+        pendingSave = false;
+        await triggerSave();
+      }
+    }
+  };
+
+  const scheduleSave = () => {
+    if (!state.uid) {
+      return;
+    }
+
+    if (saveTimeoutId) {
+      clearTimeout(saveTimeoutId);
+    }
+
+    saveTimeoutId = window.setTimeout(() => {
+      saveTimeoutId = null;
+      triggerSave();
+    }, AUTOSAVE_DELAY_MS);
   };
 
   const showKnockoutImage = () => {
@@ -129,26 +199,35 @@ export const createTodoList = ({
 
   const setUid = (uid) => {
     state.uid = uid || "";
+    if (!state.uid) {
+      cancelPendingSave();
+    }
   };
 
-  const setItems = (items) => {
+  const setItems = (items, { triggerSave: shouldTriggerSave = true } = {}) => {
     state.items = items.map(cloneItem);
     render();
+    if (shouldTriggerSave) {
+      scheduleSave();
+    }
   };
 
   const addTodoItem = () => {
     state.items.push({ description: "", completed: false });
     render();
+    scheduleSave();
   };
 
   const removeTodoItem = (index) => {
     state.items.splice(index, 1);
     render();
+    scheduleSave();
   };
 
   const updateItemDescription = (index, description) => {
     if (state.items[index]) {
       state.items[index].description = description;
+      scheduleSave();
     }
   };
 
@@ -164,6 +243,7 @@ export const createTodoList = ({
     }
 
     render();
+    scheduleSave();
   };
 
   const loadTodoItems = async () => {
@@ -171,31 +251,16 @@ export const createTodoList = ({
       const docRef = doc(db, "todos", TODO_DOC_ID);
       const snapshot = await getDoc(docRef);
       const data = snapshot.exists() ? snapshot.data()?.data ?? [] : [];
-      setItems(data.map(cloneItem));
+      setItems(data, { triggerSave: false });
     } catch (error) {
       console.error("Error loading todo items", error);
-      setItems([]);
+      setItems([], { triggerSave: false });
     }
   };
 
   const saveTodoItems = async () => {
-    const docRef = doc(db, "todos", TODO_DOC_ID);
-
-    try {
-      await updateDoc(
-        docRef,
-        {
-          data: state.items.map((item) => ({
-            completed: item.completed,
-            description: item.description,
-          })),
-        },
-        { merge: true }
-      );
-      console.log("Document written with ID: ", docRef.id);
-    } catch (error) {
-      console.error("Error saving todo items", error);
-    }
+    cancelPendingSave();
+    await triggerSave();
   };
 
   const getTodoItems = () =>
