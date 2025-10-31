@@ -73,6 +73,25 @@ describe("createTodoList", () => {
     await Promise.resolve();
   };
 
+  const createDragEvent = (type, { clientY = 0, relatedTarget = null } = {}) => {
+    const event = new Event(type, { bubbles: true, cancelable: true });
+    Object.defineProperty(event, "dataTransfer", {
+      value: {
+        effectAllowed: null,
+        dropEffect: null,
+        setData: jest.fn(),
+        getData: jest.fn(),
+      },
+    });
+    Object.defineProperty(event, "clientY", { value: clientY });
+    Object.defineProperty(event, "relatedTarget", {
+      value: relatedTarget,
+    });
+    event.preventDefault = jest.fn();
+    event.stopPropagation = jest.fn();
+    return event;
+  };
+
   test("setItems renders tasks without scheduling a save when requested", () => {
     const todo = createTodoList({ listElement, modalElement, imageContainer });
     todo.setUid("user-1");
@@ -156,6 +175,130 @@ describe("createTodoList", () => {
     expect(modalElement.classList.contains("open")).toBe(false);
 
     randomSpy.mockRestore();
+  });
+
+  test("dragging a task to a new position updates order and schedules save", async () => {
+    const todo = createTodoList({ listElement, modalElement, imageContainer });
+    todo.setUid("user-1");
+    todo.setItems(
+      [
+        { description: "task a", completed: false },
+        { description: "task b", completed: false },
+        { description: "task c", completed: false },
+      ],
+      { triggerSave: false }
+    );
+
+    const items = Array.from(listElement.querySelectorAll("li"));
+    items.forEach((li, index) => {
+      li.getBoundingClientRect = () => ({
+        top: index * 40,
+        height: 40,
+      });
+    });
+
+    const dragHandles = listElement.querySelectorAll(".drag-handle");
+    const firstHandle = dragHandles[0];
+    const secondItem = items[1];
+
+    firstHandle.dispatchEvent(createDragEvent("dragstart"));
+    expect(items[0].classList.contains("dragging")).toBe(true);
+
+    const dragOverEvent = createDragEvent("dragover", { clientY: 65 });
+    secondItem.dispatchEvent(dragOverEvent);
+    expect(secondItem.classList.contains("dragover-after")).toBe(true);
+
+    secondItem.dispatchEvent(
+      createDragEvent("dragleave", { relatedTarget: null })
+    );
+    expect(secondItem.classList.contains("dragover-after")).toBe(false);
+
+    secondItem.dispatchEvent(createDragEvent("dragover", { clientY: 65 }));
+    expect(secondItem.classList.contains("dragover-after")).toBe(true);
+
+    secondItem.dispatchEvent(createDragEvent("drop", { clientY: 65 }));
+
+    expect(secondItem.classList.contains("dragover-after")).toBe(false);
+    const refreshedItems = Array.from(
+      listElement.querySelectorAll("li")
+    );
+    expect(
+      refreshedItems.some((item) => item.classList.contains("dragging"))
+    ).toBe(false);
+
+    firstHandle.dispatchEvent(createDragEvent("dragend"));
+
+    await flushAutosave();
+    expect(updateDocMock).toHaveBeenCalledTimes(1);
+
+    const descriptions = todo
+      .getTodoItems()
+      .map((item) => item.description);
+    expect(descriptions).toEqual(["task b", "task a", "task c"]);
+  });
+
+  test("dropping a task back on itself keeps order unchanged and skips save", async () => {
+    const todo = createTodoList({ listElement, modalElement, imageContainer });
+    todo.setUid("user-1");
+    todo.setItems(
+      [
+        { description: "solo task", completed: false },
+        { description: "second task", completed: false },
+      ],
+      { triggerSave: false }
+    );
+
+    const items = Array.from(listElement.querySelectorAll("li"));
+    items.forEach((li) => {
+      li.getBoundingClientRect = () => ({
+        top: 0,
+        height: 40,
+      });
+    });
+
+    const firstHandle = listElement.querySelector(".drag-handle");
+    firstHandle.dispatchEvent(createDragEvent("dragstart"));
+
+    const firstItem = items[0];
+    firstItem.dispatchEvent(createDragEvent("dragover", { clientY: 5 }));
+    expect(firstItem.classList.contains("dragover-before")).toBe(false);
+
+    firstItem.dispatchEvent(createDragEvent("drop", { clientY: 5 }));
+
+    await flushAutosave();
+    expect(updateDocMock).not.toHaveBeenCalled();
+
+    const descriptions = todo
+      .getTodoItems()
+      .map((item) => item.description);
+    expect(descriptions).toEqual(["solo task", "second task"]);
+  });
+
+  test("ignores drag interactions when no item is active", async () => {
+    const todo = createTodoList({ listElement, modalElement, imageContainer });
+    todo.setUid("user-1");
+    todo.setItems(
+      [
+        { description: "keep me", completed: false },
+        { description: "also keep me", completed: false },
+      ],
+      { triggerSave: false }
+    );
+
+    const firstItem = listElement.querySelector("li");
+    firstItem.getBoundingClientRect = () => ({
+      top: 0,
+      height: 40,
+    });
+
+    firstItem.dispatchEvent(createDragEvent("dragover", { clientY: 10 }));
+    expect(firstItem.classList.contains("dragover-after")).toBe(false);
+    expect(firstItem.classList.contains("dragover-before")).toBe(false);
+
+    firstItem.dispatchEvent(createDragEvent("drop", { clientY: 10 }));
+
+    await flushAutosave();
+    expect(updateDocMock).not.toHaveBeenCalled();
   });
 
   test("loadTodoItems populates list from Firestore without triggering autosave", async () => {
