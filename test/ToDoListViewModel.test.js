@@ -35,6 +35,7 @@ describe("createTodoList", () => {
   let modalElement;
   let imageContainer;
   let consoleLogSpy;
+  let consoleErrorSpy;
 
   beforeEach(() => {
     jest.useFakeTimers();
@@ -56,6 +57,7 @@ describe("createTodoList", () => {
     });
 
     consoleLogSpy = jest.spyOn(console, "log").mockImplementation(() => {});
+    consoleErrorSpy = jest.spyOn(console, "error").mockImplementation(() => {});
   });
 
   afterEach(() => {
@@ -63,6 +65,7 @@ describe("createTodoList", () => {
     jest.useRealTimers();
     document.body.innerHTML = "";
     consoleLogSpy.mockRestore();
+    consoleErrorSpy.mockRestore();
   });
 
   const flushAutosave = async (delay = 800) => {
@@ -186,6 +189,217 @@ describe("createTodoList", () => {
 
     await todo.saveTodoItems();
     expect(updateDocMock).toHaveBeenCalledTimes(1);
+
+    await flushAutosave();
+    expect(updateDocMock).toHaveBeenCalledTimes(1);
+  });
+
+  test("saveTodoItems exits early when no user is signed in", async () => {
+    const todo = createTodoList({ listElement, modalElement, imageContainer });
+
+    await todo.saveTodoItems();
+
+    expect(updateDocMock).not.toHaveBeenCalled();
+  });
+
+  test("saveTodoItems logs an error when persistence fails", async () => {
+    const todo = createTodoList({ listElement, modalElement, imageContainer });
+    todo.setUid("user-1");
+    todo.setItems([{ description: "error", completed: false }], {
+      triggerSave: false,
+    });
+
+    const error = new Error("boom");
+    updateDocMock.mockRejectedValueOnce(error);
+
+    await todo.saveTodoItems();
+
+    expect(consoleErrorSpy).toHaveBeenCalledWith(
+      "Error saving todo items",
+      error
+    );
+  });
+
+  test("pending saves are flushed after in-progress save completes", async () => {
+    const todo = createTodoList({ listElement, modalElement, imageContainer });
+    todo.setUid("user-1");
+
+    let resolveFirstSave;
+    updateDocMock
+      .mockImplementationOnce(
+        () => new Promise((resolve) => (resolveFirstSave = resolve))
+      )
+      .mockResolvedValueOnce({});
+
+    todo.addTodoItem();
+    await flushAutosave();
+    expect(updateDocMock).toHaveBeenCalledTimes(1);
+
+    todo.saveTodoItems();
+    expect(updateDocMock).toHaveBeenCalledTimes(1);
+
+    resolveFirstSave();
+    await Promise.resolve();
+    await Promise.resolve();
+
+    expect(updateDocMock).toHaveBeenCalledTimes(2);
+  });
+
+  test("rapid successive changes reset the autosave timer", async () => {
+    const todo = createTodoList({ listElement, modalElement, imageContainer });
+    todo.setUid("user-1");
+
+    todo.addTodoItem();
+    jest.advanceTimersByTime(400);
+    todo.addTodoItem();
+
+    expect(updateDocMock).not.toHaveBeenCalled();
+
+    await flushAutosave();
+    expect(updateDocMock).toHaveBeenCalledTimes(1);
+  });
+
+  test("toggleItemCompletion exits early when modal elements are missing", () => {
+    const todo = createTodoList({
+      listElement,
+      modalElement: null,
+      imageContainer: null,
+    });
+    todo.setUid("user-1");
+    todo.setItems([{ description: "task", completed: false }], {
+      triggerSave: false,
+    });
+
+    expect(() => {
+      todo.toggleItemCompletion(0, true);
+    }).not.toThrow();
+  });
+
+  test("setItems safely handles missing list element", () => {
+    const todo = createTodoList({
+      listElement: null,
+      modalElement,
+      imageContainer,
+    });
+    todo.setUid("user-1");
+
+    expect(() => {
+      todo.setItems([{ description: "task", completed: false }]);
+    }).not.toThrow();
+  });
+
+  test("setUid clears pending autosave when user logs out", () => {
+    const todo = createTodoList({ listElement, modalElement, imageContainer });
+    todo.setUid("user-1");
+    todo.addTodoItem();
+
+    expect(jest.getTimerCount()).toBeGreaterThan(0);
+
+    todo.setUid("");
+    expect(jest.getTimerCount()).toBe(0);
+  });
+
+  test("toggleItemCompletion ignores nonexistent indexes", () => {
+    const todo = createTodoList({ listElement, modalElement, imageContainer });
+    todo.setUid("user-1");
+
+    expect(() => {
+      todo.toggleItemCompletion(3, true);
+    }).not.toThrow();
+  });
+
+  test("remove button click removes item and schedules save", async () => {
+    const todo = createTodoList({ listElement, modalElement, imageContainer });
+    todo.setUid("user-1");
+    todo.setItems([{ description: "task", completed: false }], {
+      triggerSave: false,
+    });
+
+    const removeButton = listElement.querySelector(".button--remove");
+    removeButton.click();
+
+    expect(listElement.childElementCount).toBe(0);
+
+    await flushAutosave();
+    expect(updateDocMock).toHaveBeenCalledTimes(1);
+  });
+
+  test("checkbox change handler toggles completion", () => {
+    const todo = createTodoList({ listElement, modalElement, imageContainer });
+    todo.setUid("user-1");
+    todo.setItems([{ description: "task", completed: false }], {
+      triggerSave: false,
+    });
+
+    const checkbox = listElement.querySelector(".task-checkbox");
+    checkbox.checked = true;
+    checkbox.dispatchEvent(new Event("change", { bubbles: true }));
+
+    expect(todo.getTodoItems()[0].completed).toBe(true);
+  });
+
+  test("loadTodoItems handles errors gracefully", async () => {
+    const todo = createTodoList({ listElement, modalElement, imageContainer });
+    todo.setUid("user-1");
+
+    const loadError = new Error("load failed");
+    getDocMock.mockRejectedValueOnce(loadError);
+
+    await todo.loadTodoItems();
+
+    expect(consoleErrorSpy).toHaveBeenCalledWith(
+      "Error loading todo items",
+      loadError
+    );
+    expect(listElement.childElementCount).toBe(0);
+  });
+
+  test("loadTodoItems leaves list empty when document is missing", async () => {
+    const todo = createTodoList({ listElement, modalElement, imageContainer });
+    todo.setUid("user-1");
+
+    await todo.loadTodoItems();
+
+    expect(listElement.childElementCount).toBe(0);
+  });
+
+  test("loadTodoItems falls back to empty when document has no data field", async () => {
+    const todo = createTodoList({ listElement, modalElement, imageContainer });
+    todo.setUid("user-1");
+
+    getDocMock.mockResolvedValueOnce({
+      exists: () => true,
+      data: () => ({ data: undefined }),
+    });
+
+    await todo.loadTodoItems();
+
+    expect(listElement.childElementCount).toBe(0);
+  });
+
+  test("updateItemDescription ignores out-of-range indexes", () => {
+    const todo = createTodoList({ listElement, modalElement, imageContainer });
+    todo.setUid("user-1");
+    todo.setItems([{ description: "task", completed: false }], {
+      triggerSave: false,
+    });
+
+    todo.updateItemDescription(5, "new");
+
+    expect(todo.getTodoItems()[0].description).toBe("task");
+    expect(jest.getTimerCount()).toBe(0);
+  });
+
+  test("toggling completion to false skips knockout modal", async () => {
+    const todo = createTodoList({ listElement, modalElement, imageContainer });
+    todo.setUid("user-1");
+    todo.setItems([{ description: "task", completed: true }], {
+      triggerSave: false,
+    });
+
+    todo.toggleItemCompletion(0, false);
+
+    expect(modalElement.classList.contains("open")).toBe(false);
 
     await flushAutosave();
     expect(updateDocMock).toHaveBeenCalledTimes(1);
