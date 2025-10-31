@@ -19,12 +19,17 @@ const init = () => {
   const listElement = document.getElementById("todo-list");
   const modalElement = document.getElementById("modal-one");
   const imageContainer = document.getElementById("knockouts");
+  const yearElement = document.getElementById("current-year");
 
   const toDoList = createTodoList({
     listElement,
     modalElement,
     imageContainer,
   });
+
+  if (yearElement) {
+    yearElement.textContent = new Date().getFullYear();
+  }
 
   const setLoggedOutState = () => {
     userNameElement.textContent = "";
