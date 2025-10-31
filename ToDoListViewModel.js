@@ -61,6 +61,7 @@ export const createTodoList = ({
   let saveTimeoutId = null;
   let isSaving = false;
   let pendingSave = false;
+  let draggedIndex = null;
 
   const cancelPendingSave = () => {
     if (saveTimeoutId) {
@@ -143,6 +144,36 @@ export const createTodoList = ({
     }, 3000);
   };
 
+  const moveTodoItem = (fromIndex, toIndex) => {
+    if (fromIndex === null || fromIndex === undefined) {
+      return;
+    }
+
+    if (
+      fromIndex === toIndex ||
+      fromIndex < 0 ||
+      fromIndex >= state.items.length
+    ) {
+      draggedIndex = null;
+      return;
+    }
+
+    const [movedItem] = state.items.splice(fromIndex, 1);
+    if (!movedItem) {
+      draggedIndex = null;
+      return;
+    }
+
+    const boundedIndex = Math.max(
+      0,
+      Math.min(toIndex, state.items.length)
+    );
+    state.items.splice(boundedIndex, 0, movedItem);
+    draggedIndex = null;
+    render();
+    scheduleSave();
+  };
+
   const render = () => {
     if (!state.listElement) {
       return;
@@ -154,10 +185,39 @@ export const createTodoList = ({
 
     state.items.forEach((item, index) => {
       const li = document.createElement("li");
+      li.classList.add("todo-item");
+      li.dataset.index = String(index);
 
       if (item.completed) {
         li.classList.add("completed");
       }
+
+      const clearDragIndicators = () => {
+        li.classList.remove("dragover-before");
+        li.classList.remove("dragover-after");
+      };
+
+      const dragHandle = document.createElement("button");
+      dragHandle.type = "button";
+      dragHandle.className = "button button--drag drag-handle";
+      dragHandle.setAttribute("draggable", "true");
+      dragHandle.title = "Reorder task";
+      dragHandle.setAttribute("aria-label", "Reorder task");
+      dragHandle.textContent = "::";
+      dragHandle.addEventListener("dragstart", (event) => {
+        draggedIndex = index;
+        li.classList.add("dragging");
+        if (event.dataTransfer) {
+          event.dataTransfer.effectAllowed = "move";
+          event.dataTransfer.setData("text/plain", String(index));
+        }
+      });
+
+      dragHandle.addEventListener("dragend", () => {
+        li.classList.remove("dragging");
+        draggedIndex = null;
+        clearDragIndicators();
+      });
 
       const checkbox = document.createElement("input");
       checkbox.className = "task-checkbox larger";
@@ -187,6 +247,55 @@ export const createTodoList = ({
         removeTodoItem(index);
       });
 
+      li.addEventListener("dragover", (event) => {
+        if (draggedIndex === null) {
+          return;
+        }
+
+        event.preventDefault();
+        if (event.dataTransfer) {
+          event.dataTransfer.dropEffect = "move";
+        }
+
+        if (draggedIndex === index) {
+          clearDragIndicators();
+          return;
+        }
+
+        const boundingRect = li.getBoundingClientRect();
+        const offset = event.clientY - boundingRect.top;
+        const shouldPlaceAfter = offset > boundingRect.height / 2;
+        li.classList.toggle("dragover-after", shouldPlaceAfter);
+        li.classList.toggle("dragover-before", !shouldPlaceAfter);
+      });
+
+      li.addEventListener("dragleave", (event) => {
+        if (!li.contains(event.relatedTarget)) {
+          clearDragIndicators();
+        }
+      });
+
+      li.addEventListener("drop", (event) => {
+        if (draggedIndex === null) {
+          return;
+        }
+
+        event.preventDefault();
+        const boundingRect = li.getBoundingClientRect();
+        const offset = event.clientY - boundingRect.top;
+        const shouldPlaceAfter = offset > boundingRect.height / 2;
+        let targetIndex = shouldPlaceAfter ? index + 1 : index;
+
+        if (draggedIndex < targetIndex) {
+          targetIndex -= 1;
+        }
+
+        clearDragIndicators();
+        li.classList.remove("dragging");
+        moveTodoItem(draggedIndex, targetIndex);
+      });
+
+      li.appendChild(dragHandle);
       li.appendChild(checkbox);
       li.appendChild(input);
       li.appendChild(removeButton);

@@ -21,6 +21,49 @@
   font-size: 18px;
 }
 
+.todo-list {
+  padding: 0;
+  margin: 0;
+}
+
+.todo-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 4px 8px;
+  border-radius: 4px;
+}
+
+.todo-item.dragging {
+  opacity: 0.5;
+}
+
+.todo-item.dragover-before {
+  border-top: 2px solid #4a90e2;
+}
+
+.todo-item.dragover-after {
+  border-bottom: 2px solid #4a90e2;
+}
+
+.button--drag {
+  cursor: grab;
+  background: transparent;
+  border: none;
+  padding: 4px 6px;
+  color: #555;
+}
+
+.button--drag:active {
+  cursor: grabbing;
+}
+
+.drag-handle {
+  font-size: 20px;
+  line-height: 1;
+  user-select: none;
+}
+
 .header-container {
   display: grid;
   grid-template-columns: 3fr 1fr;
