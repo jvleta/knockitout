@@ -9,6 +9,72 @@ const DEFAULT_ITEMS = [
   { description: "knock them out!", completed: false },
 ];
 
+const THEME_STORAGE_KEY = "knockitout-theme";
+const DARK_MODE = "dark";
+const LIGHT_MODE = "light";
+
+const getStoredTheme = () => {
+  try {
+    return localStorage.getItem(THEME_STORAGE_KEY);
+  } catch (error) {
+    return null;
+  }
+};
+
+const persistTheme = (mode) => {
+  try {
+    localStorage.setItem(THEME_STORAGE_KEY, mode);
+  } catch (error) {
+    // Ignore storage errors (e.g., private browsing restrictions)
+  }
+};
+
+const applyTheme = (mode, toggleElement) => {
+  if (mode === LIGHT_MODE) {
+    document.body.classList.add("theme-light");
+  } else {
+    document.body.classList.remove("theme-light");
+  }
+
+  if (toggleElement) {
+    toggleElement.checked = mode !== LIGHT_MODE;
+  }
+};
+
+const resolveInitialTheme = () => {
+  const stored = getStoredTheme();
+  if (stored === LIGHT_MODE || stored === DARK_MODE) {
+    return stored;
+  }
+
+  if (
+    typeof window !== "undefined" &&
+    typeof window.matchMedia === "function" &&
+    window.matchMedia("(prefers-color-scheme: dark)").matches
+  ) {
+    return DARK_MODE;
+  }
+
+  return DARK_MODE;
+};
+
+const initThemeToggle = (toggleElement) => {
+  const initialMode = resolveInitialTheme();
+  applyTheme(initialMode, toggleElement);
+
+  if (toggleElement) {
+    toggleElement.addEventListener("change", () => {
+      const mode = toggleElement.checked ? DARK_MODE : LIGHT_MODE;
+      applyTheme(mode, toggleElement);
+      persistTheme(mode);
+    });
+  }
+
+  if (initialMode !== getStoredTheme()) {
+    persistTheme(initialMode);
+  }
+};
+
 const { auth } = getFirebase();
 
 const init = () => {
@@ -20,6 +86,9 @@ const init = () => {
   const modalElement = document.getElementById("modal-one");
   const imageContainer = document.getElementById("knockouts");
   const yearElement = document.getElementById("current-year");
+  const themeToggle = document.getElementById("theme-toggle");
+
+  initThemeToggle(themeToggle);
 
   const toDoList = createTodoList({
     listElement,

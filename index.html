@@ -1,6 +1,9 @@
-<html>
+<!DOCTYPE html>
+<html lang="en">
   <head>
-    <title>knock it out</title>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Knock It Out</title>
     <script type="module" src="/main.js"></script>
     <link rel="stylesheet" href="/style.css" />
   </head>
@@ -10,7 +13,9 @@
         <header>
           <div class="header-container">
             <div class="header-child">
-              <div class="app-title">Knock some sh!t out</div>
+              <h1 class="app-title">
+                Knock some <span>sh!t</span> out
+              </h1>
             </div>
             <div class="header-child">
               <div class="login-container">
@@ -18,15 +23,33 @@
                   <div class="user-name" id="user-name"></div>
                 </div>
                 <div class="login-child">
-                  <button id="login-button" title="sign in user">
-                    login
+                  <div class="theme-toggle" title="Toggle dark mode">
+                    <label class="theme-toggle__switch">
+                      <input
+                        type="checkbox"
+                        id="theme-toggle"
+                        class="theme-toggle__checkbox"
+                        checked
+                      />
+                      <span class="theme-toggle__slider" aria-hidden="true"></span>
+                    </label>
+                    <span class="theme-toggle__text">Dark mode</span>
+                  </div>
+                </div>
+                <div class="login-child">
+                  <button
+                    id="login-button"
+                    class="button button--primary"
+                    title="Sign in user"
+                  >
+                    Login
                   </button>
                   <button
                     id="logout-button"
-                    class="is-hidden"
-                    title="sign out a user"
+                    class="button button--secondary is-hidden"
+                    title="Sign out a user"
                   >
-                    logout
+                    Logout
                   </button>
                 </div>
               </div>
@@ -35,17 +58,15 @@
         </header>
         <div class="content">
           <ul class="todo-list" id="todo-list"></ul>
-          <ul>
-            <li>
-              <button
-                class="button button--add"
-                id="add-button"
-                title="Add a new task"
-              >
-                +
-              </button>
-            </li>
-          </ul>
+          <div class="add-task-bar">
+            <button
+              class="button button--add"
+              id="add-button"
+              title="Add a new task"
+            >
+              +
+            </button>
+          </div>
         </div>
       </div>
     </div>
