@@ -1,11 +1,12 @@
+/**
+ * Firebase configuration and helper utilities for authentication and Firestore.
+ * This module centralizes initialization so other files can import the ready-to-use instances.
+ */
 import { initializeApp } from "firebase/app";
-import {
-  getAuth,
-  signInWithPopup,
-  GoogleAuthProvider
-} from "firebase/auth";
+import { getAuth, signInWithPopup, GoogleAuthProvider } from "firebase/auth";
 import { doc, getFirestore, updateDoc, getDoc } from "firebase/firestore";
 
+// Firebase project credentials. These are safe for client-side usage and match the Firebase console configuration.
 const firebaseConfig = {
   apiKey: "AIzaSyAeZdcYt6MKmhRef2QwVYr33GJZ258cKsM",
   authDomain: "knock-it-out.firebaseapp.com",
@@ -20,36 +21,54 @@ const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
 
+/**
+ * Exposes initialized Firebase services so other modules can reuse the same instances.
+ * @returns {{ app: import("firebase/app").FirebaseApp, auth: import("firebase/auth").Auth, db: import("firebase/firestore").Firestore }}
+ */
 export const getFirebase = () => {
   return { app, auth, db };
 };
 
+/**
+ * Initiates a Google sign-in flow using a popup.
+ * Consumers may attach additional handlers to the returned promise if they need the credential details.
+ * @returns {Promise<import("firebase/auth").UserCredential>} Resolves with the authenticated user's credential.
+ */
 export const signInUser = () => {
   const provider = new GoogleAuthProvider();
-  signInWithPopup(auth, provider)
+  // Return the promise so callers can respond to success or failure.
+  return signInWithPopup(auth, provider)
     .then((result) => {
-      // This gives you a Google Access Token. You can use it to access the Google API.
+      // Access token can be used to interact with other Google APIs on behalf of the user.
       const credential = GoogleAuthProvider.credentialFromResult(result);
       const token = credential.accessToken;
-      // The signed-in user info.
+      // Signed-in user profile.
       const user = result.user;
       // ...
     })
     .catch((error) => {
-      // Handle Errors here.
+      // Maintain detailed error information for analytics or user feedback.
       const errorCode = error.code;
       const errorMessage = error.message;
-      // The email of the user's account used.
+      // Email used during the failed attempt.
       const email = error.customData.email;
-      // The AuthCredential type that was used.
+      // AuthCredential used during the attempt.
       const credential = GoogleAuthProvider.credentialFromError(error);
       // ...
     });
 };
 
+/**
+ * Persists the todo items for the given user into Firestore.
+ *
+ * @param {string} uid Firebase Authentication UID for the current user.
+ * @param {Array<unknown>} toDoItems Collection of todo data to store.
+ * @returns {Promise<void>} Resolves when Firestore acknowledges the update.
+ */
 export const saveToDoListITems = async (uid, toDoItems) => {
   const docRef = doc(db, "todos", uid);
   try {
+    // Merge ensures previously written fields remain intact.
     await updateDoc(
       docRef,
       {
@@ -63,6 +82,13 @@ export const saveToDoListITems = async (uid, toDoItems) => {
   }
 };
 
+/**
+ * Loads todo items for the specified user.
+ * Note: This function currently returns an empty array immediately and populates it asynchronously.
+ *
+ * @param {string} uid Firebase Authentication UID for the current user.
+ * @returns {Array<unknown>} Cached todo items; async updates must be handled separately.
+ */
 export const loadToDoListItems = (uid) => {
   let toDoItems = [];
   console.log('yooooooo', uid);
