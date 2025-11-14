@@ -2,82 +2,19 @@ import { onAuthStateChanged } from "firebase/auth";
 import { createTodoList } from "./ToDoListViewModel.js";
 import { signInUser, signOutUser } from "./SignUpViewModel.js";
 import { getFirebase } from "./firebase.js";
+import { initThemeToggle } from "./ThemeManager.js";
 
+// Default tasks to display when the user is logged out.
 const DEFAULT_ITEMS = [
   { description: "sign in with your Gmail account", completed: false },
   { description: "create some tasks", completed: false },
   { description: "knock them out!", completed: false },
 ];
 
-const THEME_STORAGE_KEY = "knockitout-theme";
-const DARK_MODE = "dark";
-const LIGHT_MODE = "light";
-
-const getStoredTheme = () => {
-  try {
-    return localStorage.getItem(THEME_STORAGE_KEY);
-  } catch (error) {
-    return null;
-  }
-};
-
-const persistTheme = (mode) => {
-  try {
-    localStorage.setItem(THEME_STORAGE_KEY, mode);
-  } catch (error) {
-    // Ignore storage errors (e.g., private browsing restrictions)
-  }
-};
-
-const applyTheme = (mode, toggleElement) => {
-  if (mode === LIGHT_MODE) {
-    document.body.classList.add("theme-light");
-  } else {
-    document.body.classList.remove("theme-light");
-  }
-
-  if (toggleElement) {
-    toggleElement.checked = mode !== LIGHT_MODE;
-  }
-};
-
-const resolveInitialTheme = () => {
-  const stored = getStoredTheme();
-  if (stored === LIGHT_MODE || stored === DARK_MODE) {
-    return stored;
-  }
-
-  if (
-    typeof window !== "undefined" &&
-    typeof window.matchMedia === "function" &&
-    window.matchMedia("(prefers-color-scheme: dark)").matches
-  ) {
-    return DARK_MODE;
-  }
-
-  return DARK_MODE;
-};
-
-const initThemeToggle = (toggleElement) => {
-  const initialMode = resolveInitialTheme();
-  applyTheme(initialMode, toggleElement);
-
-  if (toggleElement) {
-    toggleElement.addEventListener("change", () => {
-      const mode = toggleElement.checked ? DARK_MODE : LIGHT_MODE;
-      applyTheme(mode, toggleElement);
-      persistTheme(mode);
-    });
-  }
-
-  if (initialMode !== getStoredTheme()) {
-    persistTheme(initialMode);
-  }
-};
-
 const { auth } = getFirebase();
 
 const init = () => {
+  // Cache DOM references used across the app lifecycle.
   const userNameElement = document.getElementById("user-name");
   const loginButton = document.getElementById("login-button");
   const logoutButton = document.getElementById("logout-button");
@@ -88,8 +25,10 @@ const init = () => {
   const yearElement = document.getElementById("current-year");
   const themeToggle = document.getElementById("theme-toggle");
 
+  // Enable light/dark theme toggling.
   initThemeToggle(themeToggle);
 
+  // Create a todo list instance that manages rendering and persistence.
   const toDoList = createTodoList({
     listElement,
     modalElement,
@@ -100,6 +39,7 @@ const init = () => {
     yearElement.textContent = new Date().getFullYear();
   }
 
+  // Configure UI defaults for signed-out visitors.
   const setLoggedOutState = () => {
     userNameElement.textContent = "";
     loginButton.classList.remove("is-hidden");
@@ -145,4 +85,5 @@ const init = () => {
   setLoggedOutState();
 };
 
+// Kick off initialization once the DOM is ready.
 document.addEventListener("DOMContentLoaded", init);

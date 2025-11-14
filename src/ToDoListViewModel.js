@@ -1,3 +1,8 @@
+/**
+ * View-model utilities that connect the todo list UI to Firestore,
+ * manage autosave, and keep drag-and-drop interactions in sync.
+ */
+
 import { doc, updateDoc, getDoc } from "firebase/firestore";
 import { getFirebase } from "./firebase.js";
 
@@ -17,6 +22,7 @@ import knockout13 from "./images/knockout13.gif";
 import knockout14 from "./images/knockout14.gif";
 import knockout15 from "./images/knockout15.gif";
 
+/** Array of knockout celebration images used when a task completes. */
 const images = [
   knockout1,
   knockout2,
@@ -40,16 +46,37 @@ const { db } = getFirebase();
 const TODO_DOC_ID = "iGWnr6GGZgrTHiikeC4N";
 const AUTOSAVE_DELAY_MS = 800;
 
+/**
+ * Create a clean todo item clone to avoid accidental state mutation.
+ * @param {{description?: string, completed?: boolean}} item
+ * @returns {{description: string, completed: boolean}}
+ */
 const cloneItem = (item) => ({
   description: item.description || "",
   completed: Boolean(item.completed),
 });
 
+/**
+ * Factory that wires UI elements to todo list behavior and persistence.
+ * @param {{listElement: HTMLElement, modalElement?: HTMLElement, imageContainer?: HTMLElement}} params
+ * @returns {{
+ *   setUid: (uid: string) => void,
+ *   setItems: (items: Array<{description?: string, completed?: boolean}>, options?: {triggerSave?: boolean}) => void,
+ *   addTodoItem: () => void,
+ *   removeTodoItem: (index: number) => void,
+ *   updateItemDescription: (index: number, description: string) => void,
+ *   toggleItemCompletion: (index: number, isCompleted: boolean) => void,
+ *   loadTodoItems: () => Promise<void>,
+ *   saveTodoItems: () => Promise<void>,
+ *   getTodoItems: () => Array<{description: string, completed: boolean}>
+ * }}
+ */
 export const createTodoList = ({
   listElement,
   modalElement,
   imageContainer,
 }) => {
+  /** Internal state that mirrors the rendered todo list. */
   const state = {
     uid: "",
     items: [],
@@ -63,6 +90,7 @@ export const createTodoList = ({
   let pendingSave = false;
   let draggedIndex = null;
 
+  /** Cancel any scheduled autosave to avoid stale data writes. */
   const cancelPendingSave = () => {
     if (saveTimeoutId) {
       clearTimeout(saveTimeoutId);
@@ -71,6 +99,10 @@ export const createTodoList = ({
     pendingSave = false;
   };
 
+  /**
+   * Push the current todo list to Firestore.
+   * Uses merge updates so other document fields remain untouched.
+   */
   const persistTodoItems = async () => {
     const docRef = doc(db, "todos", TODO_DOC_ID);
 
@@ -91,6 +123,7 @@ export const createTodoList = ({
     }
   };
 
+  /** Guarantee that saves run serially to keep Firestore writes ordered. */
   const triggerSave = async () => {
     if (!state.uid) {
       return;
@@ -113,6 +146,9 @@ export const createTodoList = ({
     }
   };
 
+  /**
+   * Debounce saving to Firestore by scheduling a write after user input settles.
+   */
   const scheduleSave = () => {
     if (!state.uid) {
       return;
@@ -128,6 +164,7 @@ export const createTodoList = ({
     }, AUTOSAVE_DELAY_MS);
   };
 
+  /** Display a random celebratory animation in the modal popover. */
   const showKnockoutImage = () => {
     if (!state.modalElement || !state.imageContainer) {
       return;
@@ -144,6 +181,11 @@ export const createTodoList = ({
     }, 3000);
   };
 
+  /**
+   * Reorder a todo item within the list, respecting drag-and-drop bounds.
+   * @param {number|null} fromIndex
+   * @param {number} toIndex
+   */
   const moveTodoItem = (fromIndex, toIndex) => {
     if (fromIndex === null || fromIndex === undefined) {
       return;
@@ -174,6 +216,10 @@ export const createTodoList = ({
     scheduleSave();
   };
 
+  /**
+   * Render the current todo items into the list element.
+   * Keeps drag handles, checkboxes, and inputs synchronized with state.
+   */
   const render = () => {
     if (!state.listElement) {
       return;
@@ -306,6 +352,11 @@ export const createTodoList = ({
     state.listElement.appendChild(fragment);
   };
 
+  /**
+   * Associate the todo list with a signed-in user.
+   * Clearing the UID disables autosave operations.
+   * @param {string} uid
+   */
   const setUid = (uid) => {
     state.uid = uid || "";
     if (!state.uid) {
@@ -313,6 +364,11 @@ export const createTodoList = ({
     }
   };
 
+  /**
+   * Replace the current todo items and optionally trigger an autosave.
+   * @param {Array<{description?: string, completed?: boolean}>} items
+   * @param {{triggerSave?: boolean}} [options]
+   */
   const setItems = (items, { triggerSave: shouldTriggerSave = true } = {}) => {
     state.items = items.map(cloneItem);
     render();
@@ -321,18 +377,28 @@ export const createTodoList = ({
     }
   };
 
+  /** Append a blank todo item to the list. */
   const addTodoItem = () => {
     state.items.push({ description: "", completed: false });
     render();
     scheduleSave();
   };
 
+  /**
+   * Remove the todo item at the provided index.
+   * @param {number} index
+   */
   const removeTodoItem = (index) => {
     state.items.splice(index, 1);
     render();
     scheduleSave();
   };
 
+  /**
+   * Update the description text for a todo item.
+   * @param {number} index
+   * @param {string} description
+   */
   const updateItemDescription = (index, description) => {
     if (state.items[index]) {
       state.items[index].description = description;
@@ -340,6 +406,11 @@ export const createTodoList = ({
     }
   };
 
+  /**
+   * Toggle completion state for an item and optionally play the celebration.
+   * @param {number} index
+   * @param {boolean} isCompleted
+   */
   const toggleItemCompletion = (index, isCompleted) => {
     if (!state.items[index]) {
       return;
@@ -355,6 +426,10 @@ export const createTodoList = ({
     scheduleSave();
   };
 
+  /**
+   * Pull todo items from Firestore and seed the state.
+   * Falls back to an empty list if the snapshot or data is missing.
+   */
   const loadTodoItems = async () => {
     try {
       const docRef = doc(db, "todos", TODO_DOC_ID);
@@ -367,11 +442,16 @@ export const createTodoList = ({
     }
   };
 
+  /** Force any pending changes to persist immediately. */
   const saveTodoItems = async () => {
     cancelPendingSave();
     await triggerSave();
   };
 
+  /**
+   * Return a serializable snapshot of the current todo list.
+   * @returns {Array<{description: string, completed: boolean}>}
+   */
   const getTodoItems = () =>
     state.items.map((item) => ({
       completed: item.completed,
