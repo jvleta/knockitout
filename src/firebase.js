@@ -54,7 +54,8 @@ export const signInUser = () => {
       const email = error.customData.email;
       // AuthCredential used during the attempt.
       const credential = GoogleAuthProvider.credentialFromError(error);
-      // ...
+      // Log the error details including the email for analytics or user feedback.
+      console.error("Sign-in error:", { errorCode, errorMessage, email, credential });
     });
 };
 
@@ -65,7 +66,7 @@ export const signInUser = () => {
  * @param {Array<unknown>} toDoItems Collection of todo data to store.
  * @returns {Promise<void>} Resolves when Firestore acknowledges the update.
  */
-export const saveToDoListITems = async (uid, toDoItems) => {
+export const saveToDoListItems = async (uid, toDoItems) => {
   const docRef = doc(db, "todos", uid);
   try {
     // Merge ensures previously written fields remain intact.
@@ -87,16 +88,15 @@ export const saveToDoListITems = async (uid, toDoItems) => {
  * Note: This function currently returns an empty array immediately and populates it asynchronously.
  *
  * @param {string} uid Firebase Authentication UID for the current user.
- * @returns {Array<unknown>} Cached todo items; async updates must be handled separately.
- */
-export const loadToDoListItems = (uid) => {
-  let toDoItems = [];
+export const loadToDoListItems = async (uid) => {
   console.log('yooooooo', uid);
   const docRef = doc(db, "todos", uid);
   console.log(docRef);
-  getDoc(docRef).then((querySnapshot) => {
-    console.log({docRef, db, querySnapshot});
-    toDoItems = querySnapshot.data().data;
-  });
-  return toDoItems;
+  try {
+    const querySnapshot = await getDoc(docRef);
+    return querySnapshot.data()?.data || [];
+  } catch (e) {
+    console.error("Error loading document: ", e);
+    return [];
+  }
 };
