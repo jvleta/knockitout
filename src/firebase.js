@@ -92,7 +92,6 @@ export const saveToDoListItems = async (uid, toDoItems) => {
 export const loadToDoListItems = (uid) => {
   let toDoItems = [];
   const docRef = doc(db, "todos", uid);
-  console.log(docRef);
   getDoc(docRef).then((querySnapshot) => {
     console.log({docRef, db, querySnapshot});
     toDoItems = querySnapshot.data().data;
