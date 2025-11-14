@@ -94,7 +94,6 @@ export const loadToDoListItems = async (uid) => {
   console.log(docRef);
   try {
     const querySnapshot = await getDoc(docRef);
-    console.log({docRef, db, querySnapshot});
     return querySnapshot.data()?.data || [];
   } catch (e) {
     console.error("Error loading document: ", e);
