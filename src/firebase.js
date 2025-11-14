@@ -65,7 +65,7 @@ export const signInUser = () => {
  * @param {Array<unknown>} toDoItems Collection of todo data to store.
  * @returns {Promise<void>} Resolves when Firestore acknowledges the update.
  */
-export const saveToDoListITems = async (uid, toDoItems) => {
+export const saveToDoListItems = async (uid, toDoItems) => {
   const docRef = doc(db, "todos", uid);
   try {
     // Merge ensures previously written fields remain intact.
