@@ -87,14 +87,16 @@ export const saveToDoListItems = async (uid, toDoItems) => {
  * Note: This function currently returns an empty array immediately and populates it asynchronously.
  *
  * @param {string} uid Firebase Authentication UID for the current user.
- * @returns {Array<unknown>} Cached todo items; async updates must be handled separately.
- */
-export const loadToDoListItems = (uid) => {
-  let toDoItems = [];
+export const loadToDoListItems = async (uid) => {
+  console.log('yooooooo', uid);
   const docRef = doc(db, "todos", uid);
-  getDoc(docRef).then((querySnapshot) => {
+  console.log(docRef);
+  try {
+    const querySnapshot = await getDoc(docRef);
     console.log({docRef, db, querySnapshot});
-    toDoItems = querySnapshot.data().data;
-  });
-  return toDoItems;
+    return querySnapshot.data()?.data || [];
+  } catch (e) {
+    console.error("Error loading document: ", e);
+    return [];
+  }
 };
