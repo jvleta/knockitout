@@ -54,7 +54,8 @@ export const signInUser = () => {
       const email = error.customData.email;
       // AuthCredential used during the attempt.
       const credential = GoogleAuthProvider.credentialFromError(error);
-      // ...
+      // Log the error details including the email for analytics or user feedback.
+      console.error("Sign-in error:", { errorCode, errorMessage, email, credential });
     });
 };
 
