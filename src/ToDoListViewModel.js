@@ -45,6 +45,8 @@ const { db } = getFirebase();
 
 const TODO_DOC_ID = "iGWnr6GGZgrTHiikeC4N";
 const AUTOSAVE_DELAY_MS = 800;
+const DUE_SOON_THRESHOLD_DAYS = 1;
+const DAY_IN_MS = 24 * 60 * 60 * 1000;
 
 /**
  * Create a clean todo item clone to avoid accidental state mutation.
@@ -58,33 +60,118 @@ const cloneItem = (item) => ({
   dueDate: typeof item.dueDate === "string" ? item.dueDate : "",
 });
 
-/** Determine if the provided todo item is past due (ignoring completed tasks). */
-const isItemOverdue = (item) => {
-  if (!item || item.completed || !item.dueDate) {
-    return false;
+/** Normalize a yyyy-mm-dd string into a Date or return null when invalid. */
+const parseDueDate = (dueDateString) => {
+  if (!dueDateString || typeof dueDateString !== "string") {
+    return null;
   }
 
-  const parts = item.dueDate.split("-");
+  const parts = dueDateString.split("-");
   if (parts.length !== 3) {
-    return false;
+    return null;
   }
 
   const [year, month, day] = parts.map((part) => Number.parseInt(part, 10));
   if ([year, month, day].some((num) => Number.isNaN(num))) {
-    return false;
+    return null;
   }
 
-  const dueDate = new Date(year, month - 1, day);
-  const today = new Date();
-  dueDate.setHours(0, 0, 0, 0);
-  today.setHours(0, 0, 0, 0);
+  const parsed = new Date(year, month - 1, day);
+  parsed.setHours(0, 0, 0, 0);
+  return parsed;
+};
 
-  return dueDate.getTime() < today.getTime();
+/** Get today's date without time to make date comparisons stable. */
+const getStartOfToday = () => {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  return today;
+};
+
+/**
+ * Compute a friendly due date status for an item.
+ * @param {{dueDate?: string}} item
+ * @returns {{type: "none"|"scheduled"|"due-soon"|"due-today"|"overdue", label: string, date: Date|null}}
+ */
+const getDueStatus = (item) => {
+  if (!item || !item.dueDate) {
+    return {
+      type: "none",
+      label: "No due date",
+      date: null,
+    };
+  }
+
+  const dueDate = parseDueDate(item.dueDate);
+  if (!dueDate) {
+    return {
+      type: "none",
+      label: "Invalid date",
+      date: null,
+    };
+  }
+
+  if (item.completed) {
+    return {
+      type: "scheduled",
+      label: dueDate.toLocaleDateString(),
+      date: dueDate,
+    };
+  }
+
+  const today = getStartOfToday();
+  const diffDays = Math.round(
+    (dueDate.getTime() - today.getTime()) / DAY_IN_MS
+  );
+
+  if (dueDate.getTime() < today.getTime()) {
+    const daysOverdue = Math.abs(diffDays);
+    return {
+      type: "overdue",
+      label: daysOverdue
+        ? `${daysOverdue} day${daysOverdue === 1 ? "" : "s"} overdue`
+        : "Overdue",
+      date: dueDate,
+    };
+  }
+
+  if (diffDays === 0) {
+    return {
+      type: "due-today",
+      label: "Due today",
+      date: dueDate,
+    };
+  }
+
+  if (diffDays <= DUE_SOON_THRESHOLD_DAYS) {
+    return {
+      type: "due-soon",
+      label: diffDays === 1 ? "Due tomorrow" : `Due in ${diffDays} days`,
+      date: dueDate,
+    };
+  }
+
+  return {
+    type: "scheduled",
+    label: dueDate.toLocaleDateString(),
+    date: dueDate,
+  };
 };
 
 /**
  * Factory that wires UI elements to todo list behavior and persistence.
- * @param {{listElement: HTMLElement, modalElement?: HTMLElement, imageContainer?: HTMLElement}} params
+ * @param {{
+ *   listElement: HTMLElement,
+ *   modalElement?: HTMLElement,
+ *   imageContainer?: HTMLElement,
+ *   summaryElements?: {
+ *     dueSoonCountElement?: HTMLElement | null,
+ *     overdueCountElement?: HTMLElement | null,
+ *     chipElement?: HTMLElement | null,
+ *     chipTextElement?: HTMLElement | null
+ *   },
+ *   toastContainer?: HTMLElement | null
+ * }} params
  * @returns {{
  *   setUid: (uid: string) => void,
  *   setItems: (items: Array<{description?: string, details?: string, completed?: boolean, dueDate?: string}>, options?: {triggerSave?: boolean}) => void,
@@ -103,6 +190,8 @@ export const createTodoList = ({
   listElement,
   modalElement,
   imageContainer,
+  summaryElements = {},
+  toastContainer = null,
 }) => {
   /** Internal state that mirrors the rendered todo list. */
   const state = {
@@ -111,12 +200,116 @@ export const createTodoList = ({
     listElement,
     modalElement,
     imageContainer,
+    summaryElements,
+    toastContainer,
   };
 
   let saveTimeoutId = null;
   let isSaving = false;
   let pendingSave = false;
   let draggedIndex = null;
+
+  /** Render a toast message for transient alerts. */
+  const showToast = (message, variant = "info") => {
+    if (!state.toastContainer || !message) {
+      return;
+    }
+
+    const toast = document.createElement("div");
+    toast.className = `toast toast--${variant}`;
+    toast.textContent = message;
+    state.toastContainer.appendChild(toast);
+
+    requestAnimationFrame(() => {
+      toast.classList.add("is-visible");
+    });
+
+    window.setTimeout(() => {
+      toast.classList.remove("is-visible");
+      window.setTimeout(() => {
+        toast.remove();
+      }, 250);
+    }, 4000);
+  };
+
+  /** Update header badges that summarize due soon and overdue tasks. */
+  const updateStatusSummary = (statuses) => {
+    const summary = statuses.reduce(
+      (acc, status) => {
+        if (!status) {
+          return acc;
+        }
+        if (status.type === "overdue") {
+          acc.overdue += 1;
+        } else if (
+          status.type === "due-soon" ||
+          status.type === "due-today"
+        ) {
+          acc.dueSoon += 1;
+        }
+        return acc;
+      },
+      { dueSoon: 0, overdue: 0 }
+    );
+
+    const {
+      dueSoonCountElement,
+      overdueCountElement,
+      chipElement,
+      chipTextElement,
+    } = state.summaryElements || {};
+
+    if (dueSoonCountElement) {
+      dueSoonCountElement.textContent = String(summary.dueSoon);
+    }
+    if (overdueCountElement) {
+      overdueCountElement.textContent = String(summary.overdue);
+    }
+    if (chipElement && chipTextElement) {
+      chipElement.classList.remove("due-chip--warning", "due-chip--alert");
+      let chipText = "All caught up";
+      if (summary.overdue > 0) {
+        chipElement.classList.add("due-chip--alert");
+        chipText = `${summary.overdue} task${
+          summary.overdue === 1 ? "" : "s"
+        } overdue`;
+      } else if (summary.dueSoon > 0) {
+        chipElement.classList.add("due-chip--warning");
+        chipText = `${summary.dueSoon} due soon`;
+      }
+      chipTextElement.textContent = chipText;
+    }
+  };
+
+  /** Emit a toast when a due date becomes urgent. */
+  const notifyDueDateStatus = (item, statusOverride) => {
+    if (!item) {
+      return;
+    }
+
+    if (item.completed) {
+      return;
+    }
+
+    const status = statusOverride || getDueStatus(item);
+    if (
+      !status ||
+      status.type === "none" ||
+      status.type === "scheduled"
+    ) {
+      return;
+    }
+
+    const label =
+      status.label && status.label.length
+        ? status.label.charAt(0).toLowerCase() + status.label.slice(1)
+        : "";
+    const description = item.description?.trim() || "Untitled task";
+
+    const variant = status.type === "overdue" ? "danger" : "warning";
+    const copy = label ? `${description} is ${label}` : description;
+    showToast(copy, variant);
+  };
 
   /** Cancel any scheduled autosave to avoid stale data writes. */
   const cancelPendingSave = () => {
@@ -258,17 +451,27 @@ export const createTodoList = ({
     state.listElement.innerHTML = "";
 
     const fragment = document.createDocumentFragment();
+    const statuses = [];
 
     state.items.forEach((item, index) => {
       const li = document.createElement("li");
       li.classList.add("todo-item");
       li.dataset.index = String(index);
 
+      const dueStatus = getDueStatus(item);
+      statuses.push(dueStatus);
+
       if (item.completed) {
         li.classList.add("completed");
       }
-      if (isItemOverdue(item)) {
+      if (dueStatus.type === "overdue") {
         li.classList.add("overdue");
+      }
+      if (
+        dueStatus.type === "due-soon" ||
+        dueStatus.type === "due-today"
+      ) {
+        li.classList.add("due-soon");
       }
 
       const clearDragIndicators = () => {
@@ -375,13 +578,45 @@ export const createTodoList = ({
       dueDateInput.type = "date";
       dueDateInput.value = item.dueDate || "";
       dueDateInput.title = "Due date";
+
+      const duePill = document.createElement("span");
+      duePill.className = "due-pill";
+
+      const applyDueStatusStyles = (status) => {
+        const nextStatus = status || { type: "none", label: "No due date" };
+        duePill.textContent = nextStatus.label;
+        duePill.classList.remove(
+          "due-pill--warning",
+          "due-pill--alert",
+          "due-pill--today",
+          "due-pill--muted"
+        );
+        let pillClass = "due-pill--muted";
+        if (nextStatus.type === "overdue") {
+          pillClass = "due-pill--alert";
+        } else if (nextStatus.type === "due-today") {
+          pillClass = "due-pill--today";
+        } else if (nextStatus.type === "due-soon") {
+          pillClass = "due-pill--warning";
+        } else if (nextStatus.type === "scheduled") {
+          pillClass = "due-pill--muted";
+        }
+        duePill.classList.add(pillClass);
+      };
+
+      applyDueStatusStyles(dueStatus);
+
       dueDateInput.addEventListener("input", (event) => {
         const newValue = event.target.value || "";
         updateItemDueDate(index, newValue);
-        li.classList.toggle(
-          "overdue",
-          Boolean(state.items[index] && isItemOverdue(state.items[index]))
-        );
+        const updatedStatus = getDueStatus(state.items[index]);
+        applyDueStatusStyles(updatedStatus);
+        const isOverdue = updatedStatus.type === "overdue";
+        const isDueSoon =
+          updatedStatus.type === "due-soon" ||
+          updatedStatus.type === "due-today";
+        li.classList.toggle("overdue", isOverdue);
+        li.classList.toggle("due-soon", isDueSoon);
       });
 
       const removeButton = document.createElement("button");
@@ -440,12 +675,17 @@ export const createTodoList = ({
         moveTodoItem(draggedIndex, targetIndex);
       });
 
+      const dueWrapper = document.createElement("div");
+      dueWrapper.className = "task-schedule";
+      dueWrapper.appendChild(dueDateInput);
+      dueWrapper.appendChild(duePill);
+
       li.appendChild(dragHandle);
       li.appendChild(checkbox);
       li.appendChild(input);
       const hasDetails = Boolean(item.details);
       updateDetailsVisibility(hasDetails);
-      li.appendChild(dueDateInput);
+      li.appendChild(dueWrapper);
       li.appendChild(detailsToggle);
       li.appendChild(detailsWrapper);
       li.appendChild(removeButton);
@@ -454,6 +694,7 @@ export const createTodoList = ({
     });
 
     state.listElement.appendChild(fragment);
+    updateStatusSummary(statuses);
   };
 
   /**
@@ -535,6 +776,9 @@ export const createTodoList = ({
   const updateItemDueDate = (index, dueDate) => {
     if (state.items[index]) {
       state.items[index].dueDate = dueDate;
+      const statuses = state.items.map(getDueStatus);
+      updateStatusSummary(statuses);
+      notifyDueDateStatus(state.items[index], statuses[index]);
       scheduleSave();
     }
   };

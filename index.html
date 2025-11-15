@@ -57,6 +57,22 @@
           </div>
         </header>
         <div class="content">
+          <div class="due-panel" role="region" aria-label="Due task status">
+            <div class="due-card" id="due-soon-card">
+              <p class="due-card__label">Due soon</p>
+              <p class="due-card__value" id="due-soon-count">0</p>
+              <p class="due-card__meta">Next 24h</p>
+            </div>
+            <div class="due-card due-card--alert" id="overdue-card">
+              <p class="due-card__label">Overdue</p>
+              <p class="due-card__value" id="overdue-count">0</p>
+              <p class="due-card__meta">Needs attention</p>
+            </div>
+            <div class="due-chip" id="due-chip" role="status" aria-live="polite">
+              <span class="due-chip__dot" aria-hidden="true"></span>
+              <span class="due-chip__text" id="due-chip-text">All caught up</span>
+            </div>
+          </div>
           <ul class="todo-list" id="todo-list"></ul>
           <div class="add-task-bar">
             <button
@@ -77,6 +93,14 @@
         <div id="knockouts"></div>
       </div>
     </div>
+
+    <div
+      class="toast-stack"
+      id="toast-stack"
+      role="region"
+      aria-live="polite"
+      aria-atomic="true"
+    ></div>
 
     <div class="footer">
       <p>
