@@ -8,13 +8,28 @@ import { doc, getFirestore, updateDoc, getDoc } from "firebase/firestore";
 
 // Firebase project credentials. These are safe for client-side usage and match the Firebase console configuration.
 const firebaseConfig = {
-  apiKey: "AIzaSyAeZdcYt6MKmhRef2QwVYr33GJZ258cKsM",
+  apiKey: "AIzaSyAE8cu0783bq4E2n-LFxgJRjKp6tK49zpM",
   authDomain: "knock-it-out.firebaseapp.com",
   projectId: "knock-it-out",
   storageBucket: "knock-it-out.appspot.com",
   messagingSenderId: "600141360369",
   appId: "1:600141360369:web:ff1fb41ba1c0673f0e0d50",
   measurementId: "G-09MJF8VK52",
+};
+
+const hintUnauthorizedDomainFix = (error) => {
+  if (!error?.message?.includes("The requested action is invalid")) {
+    return;
+  }
+
+  const host =
+    typeof window !== "undefined" && window.location.host
+      ? window.location.host
+      : "the domain serving this app";
+  console.error(
+    `Firebase rejected the popup because ${host} is not in the project's authorized domain list. ` +
+      "Open Firebase Console → Authentication → Settings → Authorized domains and add this host before retrying."
+  );
 };
 
 const app = initializeApp(firebaseConfig);
@@ -47,6 +62,7 @@ export const signInUser = () => {
       // ...
     })
     .catch((error) => {
+      hintUnauthorizedDomainFix(error);
       // Maintain detailed error information for analytics or user feedback.
       const errorCode = error.code;
       const errorMessage = error.message;
@@ -80,23 +96,5 @@ export const saveToDoListItems = async (uid, toDoItems) => {
     console.log("Document written with ID: ", docRef.id);
   } catch (e) {
     console.error("Error adding document: ", e);
-  }
-};
-
-/**
- * Loads todo items for the specified user.
- * Note: This function currently returns an empty array immediately and populates it asynchronously.
- *
- * @param {string} uid Firebase Authentication UID for the current user.
-export const loadToDoListItems = async (uid) => {
-  console.log('yooooooo', uid);
-  const docRef = doc(db, "todos", uid);
-  console.log(docRef);
-  try {
-    const querySnapshot = await getDoc(docRef);
-    return querySnapshot.data()?.data || [];
-  } catch (e) {
-    console.error("Error loading document: ", e);
-    return [];
   }
 };
