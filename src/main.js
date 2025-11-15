@@ -6,9 +6,13 @@ import { initThemeToggle } from "./ThemeManager.js";
 
 // Default tasks to display when the user is logged out.
 const DEFAULT_ITEMS = [
-  { description: "sign in with your Gmail account", completed: false },
-  { description: "create some tasks", completed: false },
-  { description: "knock them out!", completed: false },
+  {
+    description: "sign in with your Gmail account",
+    details: "",
+    completed: false,
+  },
+  { description: "create some tasks", details: "", completed: false },
+  { description: "knock them out!", details: "", completed: false },
 ];
 
 const { auth } = getFirebase();

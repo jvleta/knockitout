@@ -152,6 +152,63 @@ describe("createTodoList", () => {
     expect(todo.getTodoItems()[0].description).toBe("updated todo");
   });
 
+  test("details toggle opens textarea and autosaves on change", async () => {
+    const todo = createTodoList({ listElement, modalElement, imageContainer });
+    todo.setUid("user-1");
+    todo.setItems([{ description: "task", completed: false }], {
+      triggerSave: false,
+    });
+
+    const toggle = listElement.querySelector(".button--details-toggle");
+    const wrapper = listElement.querySelector(".task-details");
+    const textarea = listElement.querySelector(".task-details__input");
+
+    expect(wrapper.classList.contains("is-open")).toBe(false);
+    expect(toggle.textContent).toBe("Add details");
+    expect(toggle.getAttribute("aria-expanded")).toBe("false");
+
+    toggle.click();
+
+    expect(wrapper.classList.contains("is-open")).toBe(true);
+    expect(toggle.textContent).toBe("Hide details");
+    expect(toggle.getAttribute("aria-expanded")).toBe("true");
+
+    textarea.value = "extra context";
+    textarea.dispatchEvent(new Event("input", { bubbles: true }));
+
+    await flushAutosave();
+    expect(updateDocMock).toHaveBeenCalledTimes(1);
+    expect(todo.getTodoItems()[0].details).toBe("extra context");
+
+    toggle.click();
+    expect(wrapper.classList.contains("is-open")).toBe(false);
+    expect(toggle.textContent).toBe("Show details");
+  });
+
+  test("tasks with existing details render expanded with correct labels", () => {
+    const todo = createTodoList({ listElement, modalElement, imageContainer });
+    todo.setUid("user-1");
+    todo.setItems(
+      [{ description: "task", details: "already noted", completed: false }],
+      { triggerSave: false }
+    );
+
+    const toggle = listElement.querySelector(".button--details-toggle");
+    const wrapper = listElement.querySelector(".task-details");
+    const textarea = listElement.querySelector(".task-details__input");
+
+    expect(wrapper.classList.contains("is-open")).toBe(true);
+    expect(toggle.textContent).toBe("Hide details");
+    expect(toggle.getAttribute("aria-expanded")).toBe("true");
+    expect(textarea.value).toBe("already noted");
+
+    toggle.click();
+
+    expect(wrapper.classList.contains("is-open")).toBe(false);
+    expect(toggle.textContent).toBe("Show details");
+    expect(toggle.getAttribute("aria-expanded")).toBe("false");
+  });
+
   test("toggleItemCompletion marks item, shows modal, and auto-saves", async () => {
     const todo = createTodoList({ listElement, modalElement, imageContainer });
     todo.setUid("user-1");

@@ -48,11 +48,12 @@ const AUTOSAVE_DELAY_MS = 800;
 
 /**
  * Create a clean todo item clone to avoid accidental state mutation.
- * @param {{description?: string, completed?: boolean, dueDate?: string}} item
- * @returns {{description: string, completed: boolean, dueDate: string}}
+ * @param {{description?: string, details?: string, completed?: boolean, dueDate?: string}} item
+ * @returns {{description: string, details: string, completed: boolean, dueDate: string}}
  */
 const cloneItem = (item) => ({
   description: item.description || "",
+  details: item.details || "",
   completed: Boolean(item.completed),
   dueDate: typeof item.dueDate === "string" ? item.dueDate : "",
 });
@@ -86,10 +87,11 @@ const isItemOverdue = (item) => {
  * @param {{listElement: HTMLElement, modalElement?: HTMLElement, imageContainer?: HTMLElement}} params
  * @returns {{
  *   setUid: (uid: string) => void,
- *   setItems: (items: Array<{description?: string, completed?: boolean, dueDate?: string}>, options?: {triggerSave?: boolean}) => void,
+ *   setItems: (items: Array<{description?: string, details?: string, completed?: boolean, dueDate?: string}>, options?: {triggerSave?: boolean}) => void,
  *   addTodoItem: () => void,
  *   removeTodoItem: (index: number) => void,
  *   updateItemDescription: (index: number, description: string) => void,
+ *   updateItemDetails: (index: number, details: string) => void,
  *   updateItemDueDate: (index: number, dueDate: string) => void,
  *   toggleItemCompletion: (index: number, isCompleted: boolean) => void,
  *   loadTodoItems: () => Promise<void>,
@@ -139,6 +141,7 @@ export const createTodoList = ({
           data: state.items.map((item) => ({
             completed: item.completed,
             description: item.description,
+            details: item.details,
             dueDate: item.dueDate,
           })),
         },
@@ -315,6 +318,58 @@ export const createTodoList = ({
         updateItemDescription(index, event.target.value);
       });
 
+      const detailsWrapper = document.createElement("div");
+      detailsWrapper.className = "task-details";
+
+      const detailsToggle = document.createElement("button");
+      detailsToggle.type = "button";
+      detailsToggle.className = "button button--details-toggle";
+      detailsToggle.textContent = "Add details";
+      detailsToggle.setAttribute("aria-expanded", "false");
+      detailsToggle.setAttribute("aria-controls", `details-${index}`);
+
+      const detailsInput = document.createElement("textarea");
+      detailsInput.className = "task-details__input";
+      detailsInput.placeholder = "Add more detail...";
+      detailsInput.value = item.details;
+      detailsInput.id = `details-${index}`;
+      detailsInput.addEventListener("input", (event) => {
+        updateItemDetails(index, event.target.value);
+        const isOpen = detailsWrapper.classList.contains("is-open");
+        updateDetailsVisibility(isOpen);
+      });
+
+      const collapsedLabel = () =>
+        detailsInput.value.trim().length ? "Show details" : "Add details";
+
+      const updateDetailsVisibility = (
+        shouldShow,
+        { shouldFocus = false } = {}
+      ) => {
+        detailsWrapper.classList.toggle("is-open", shouldShow);
+        detailsToggle.setAttribute("aria-expanded", String(shouldShow));
+        const collapsedText = collapsedLabel();
+        detailsToggle.textContent = shouldShow ? "Hide details" : collapsedText;
+        detailsToggle.setAttribute(
+          "aria-label",
+          shouldShow
+            ? "Hide task details"
+            : collapsedText === "Show details"
+            ? "Show task details"
+            : "Add task details"
+        );
+        if (shouldShow && shouldFocus) {
+          detailsInput.focus();
+        }
+      };
+
+      detailsToggle.addEventListener("click", () => {
+        const isOpen = detailsWrapper.classList.contains("is-open");
+        updateDetailsVisibility(!isOpen, { shouldFocus: !isOpen });
+      });
+
+      detailsWrapper.appendChild(detailsInput);
+
       const dueDateInput = document.createElement("input");
       dueDateInput.className = "task-date";
       dueDateInput.type = "date";
@@ -388,7 +443,11 @@ export const createTodoList = ({
       li.appendChild(dragHandle);
       li.appendChild(checkbox);
       li.appendChild(input);
+      const hasDetails = Boolean(item.details);
+      updateDetailsVisibility(hasDetails);
       li.appendChild(dueDateInput);
+      li.appendChild(detailsToggle);
+      li.appendChild(detailsWrapper);
       li.appendChild(removeButton);
 
       fragment.appendChild(li);
@@ -411,7 +470,7 @@ export const createTodoList = ({
 
   /**
    * Replace the current todo items and optionally trigger an autosave.
-   * @param {Array<{description?: string, completed?: boolean, dueDate?: string}>} items
+   * @param {Array<{description?: string, details?: string, completed?: boolean, dueDate?: string}>} items
    * @param {{triggerSave?: boolean}} [options]
    */
   const setItems = (items, { triggerSave: shouldTriggerSave = true } = {}) => {
@@ -424,7 +483,12 @@ export const createTodoList = ({
 
   /** Append a blank todo item to the list. */
   const addTodoItem = () => {
-    state.items.push({ description: "", completed: false, dueDate: "" });
+    state.items.push({
+      description: "",
+      details: "",
+      completed: false,
+      dueDate: "",
+    });
     render();
     scheduleSave();
   };
@@ -447,6 +511,18 @@ export const createTodoList = ({
   const updateItemDescription = (index, description) => {
     if (state.items[index]) {
       state.items[index].description = description;
+      scheduleSave();
+    }
+  };
+
+  /**
+   * Update the detailed description for a todo item.
+   * @param {number} index
+   * @param {string} details
+   */
+  const updateItemDetails = (index, details) => {
+    if (state.items[index]) {
+      state.items[index].details = details;
       scheduleSave();
     }
   };
@@ -507,12 +583,13 @@ export const createTodoList = ({
 
   /**
    * Return a serializable snapshot of the current todo list.
-   * @returns {Array<{description: string, completed: boolean, dueDate: string}>}
+   * @returns {Array<{description: string, details: string, completed: boolean, dueDate: string}>}
    */
   const getTodoItems = () =>
     state.items.map((item) => ({
       completed: item.completed,
       description: item.description,
+      details: item.details,
       dueDate: item.dueDate,
     }));
 
@@ -522,6 +599,7 @@ export const createTodoList = ({
     addTodoItem,
     removeTodoItem,
     updateItemDescription,
+    updateItemDetails,
     updateItemDueDate,
     toggleItemCompletion,
     loadTodoItems,
