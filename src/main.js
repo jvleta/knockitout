@@ -28,6 +28,11 @@ const init = () => {
   const imageContainer = document.getElementById("knockouts");
   const yearElement = document.getElementById("current-year");
   const themeToggle = document.getElementById("theme-toggle");
+  const dueSoonCountElement = document.getElementById("due-soon-count");
+  const overdueCountElement = document.getElementById("overdue-count");
+  const dueChipElement = document.getElementById("due-chip");
+  const dueChipTextElement = document.getElementById("due-chip-text");
+  const toastContainer = document.getElementById("toast-stack");
 
   // Enable light/dark theme toggling.
   initThemeToggle(themeToggle);
@@ -37,6 +42,13 @@ const init = () => {
     listElement,
     modalElement,
     imageContainer,
+    summaryElements: {
+      dueSoonCountElement,
+      overdueCountElement,
+      chipElement: dueChipElement,
+      chipTextElement: dueChipTextElement,
+    },
+    toastContainer,
   });
 
   if (yearElement) {
