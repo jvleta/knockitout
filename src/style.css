@@ -102,7 +102,6 @@ ul {
 
 .todo-list-inner-sec-wrap {
   width: 100%;
-  max-width: 820px;
   backdrop-filter: blur(22px);
   background: var(--color-surface);
   border-radius: var(--radius-lg);
@@ -437,6 +436,7 @@ body.theme-light .task-text:focus {
 .todo-item {
   display: flex;
   align-items: center;
+  flex-wrap: wrap;
   gap: 14px;
   background: rgba(42, 42, 42, 0.65);
   border-radius: var(--radius-md);
@@ -493,7 +493,8 @@ body.theme-light .todo-item.dragover-after {
 }
 
 .task-text {
-  flex: 1;
+  flex: 1 1 360px;
+  min-width: 260px;
   background: rgba(34, 34, 34, 0.78);
   border: 1px solid transparent;
   color: var(--color-text);
@@ -538,6 +539,77 @@ body.theme-light .todo-item.dragover-after {
 
 .is-hidden {
   display: none !important;
+}
+
+.button--details-toggle {
+  flex-shrink: 0;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  background: rgba(60, 60, 60, 0.75);
+  color: var(--color-subtle);
+  border-radius: var(--radius-sm);
+  padding: 6px 12px;
+  font-size: 14px;
+  cursor: pointer;
+  transition: background-color var(--transition-base),
+    border-color var(--transition-base);
+}
+
+.button--details-toggle:hover,
+.button--details-toggle:focus-visible {
+  border-color: rgba(255, 255, 255, 0.35);
+  color: var(--color-text);
+}
+
+.task-details {
+  display: none;
+  width: 100%;
+}
+
+.task-details.is-open {
+  display: block;
+}
+
+.task-details__input {
+  width: 100%;
+  min-height: 80px;
+  margin-top: 8px;
+  background: rgba(34, 34, 34, 0.78);
+  border-radius: var(--radius-sm);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  padding: 12px 14px;
+  color: var(--color-text);
+  font-family: inherit;
+  font-size: 16px;
+  resize: vertical;
+}
+
+.task-details__input:focus {
+  outline: none;
+  border-color: rgba(255, 255, 255, 0.35);
+  background: rgba(44, 44, 44, 0.95);
+}
+
+body.theme-light .button--details-toggle {
+  background: rgba(255, 255, 255, 0.85);
+  border-color: rgba(0, 0, 0, 0.12);
+  color: var(--color-subtle);
+}
+
+body.theme-light .button--details-toggle:hover,
+body.theme-light .button--details-toggle:focus-visible {
+  border-color: rgba(0, 0, 0, 0.4);
+  color: var(--color-accent-dark);
+}
+
+body.theme-light .task-details__input {
+  background: rgba(255, 255, 255, 0.95);
+  border-color: rgba(0, 0, 0, 0.12);
+  color: var(--color-text);
+}
+
+body.theme-light .task-details__input:focus {
+  border-color: rgba(0, 0, 0, 0.35);
+  background: #ffffff;
 }
 
 a {
@@ -624,6 +696,7 @@ body.theme-light a:hover {
 
   .task-text {
     width: 100%;
+    flex-basis: 100%;
   }
 
   .login-container {
