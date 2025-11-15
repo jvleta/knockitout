@@ -48,27 +48,53 @@ const AUTOSAVE_DELAY_MS = 800;
 
 /**
  * Create a clean todo item clone to avoid accidental state mutation.
- * @param {{description?: string, completed?: boolean}} item
- * @returns {{description: string, completed: boolean}}
+ * @param {{description?: string, completed?: boolean, dueDate?: string}} item
+ * @returns {{description: string, completed: boolean, dueDate: string}}
  */
 const cloneItem = (item) => ({
   description: item.description || "",
   completed: Boolean(item.completed),
+  dueDate: typeof item.dueDate === "string" ? item.dueDate : "",
 });
+
+/** Determine if the provided todo item is past due (ignoring completed tasks). */
+const isItemOverdue = (item) => {
+  if (!item || item.completed || !item.dueDate) {
+    return false;
+  }
+
+  const parts = item.dueDate.split("-");
+  if (parts.length !== 3) {
+    return false;
+  }
+
+  const [year, month, day] = parts.map((part) => Number.parseInt(part, 10));
+  if ([year, month, day].some((num) => Number.isNaN(num))) {
+    return false;
+  }
+
+  const dueDate = new Date(year, month - 1, day);
+  const today = new Date();
+  dueDate.setHours(0, 0, 0, 0);
+  today.setHours(0, 0, 0, 0);
+
+  return dueDate.getTime() < today.getTime();
+};
 
 /**
  * Factory that wires UI elements to todo list behavior and persistence.
  * @param {{listElement: HTMLElement, modalElement?: HTMLElement, imageContainer?: HTMLElement}} params
  * @returns {{
  *   setUid: (uid: string) => void,
- *   setItems: (items: Array<{description?: string, completed?: boolean}>, options?: {triggerSave?: boolean}) => void,
+ *   setItems: (items: Array<{description?: string, completed?: boolean, dueDate?: string}>, options?: {triggerSave?: boolean}) => void,
  *   addTodoItem: () => void,
  *   removeTodoItem: (index: number) => void,
  *   updateItemDescription: (index: number, description: string) => void,
+ *   updateItemDueDate: (index: number, dueDate: string) => void,
  *   toggleItemCompletion: (index: number, isCompleted: boolean) => void,
  *   loadTodoItems: () => Promise<void>,
  *   saveTodoItems: () => Promise<void>,
- *   getTodoItems: () => Array<{description: string, completed: boolean}>
+ *   getTodoItems: () => Array<{description: string, completed: boolean, dueDate: string}>
  * }}
  */
 export const createTodoList = ({
@@ -113,6 +139,7 @@ export const createTodoList = ({
           data: state.items.map((item) => ({
             completed: item.completed,
             description: item.description,
+            dueDate: item.dueDate,
           })),
         },
         { merge: true }
@@ -237,6 +264,9 @@ export const createTodoList = ({
       if (item.completed) {
         li.classList.add("completed");
       }
+      if (isItemOverdue(item)) {
+        li.classList.add("overdue");
+      }
 
       const clearDragIndicators = () => {
         li.classList.remove("dragover-before");
@@ -283,6 +313,20 @@ export const createTodoList = ({
       }
       input.addEventListener("input", (event) => {
         updateItemDescription(index, event.target.value);
+      });
+
+      const dueDateInput = document.createElement("input");
+      dueDateInput.className = "task-date";
+      dueDateInput.type = "date";
+      dueDateInput.value = item.dueDate || "";
+      dueDateInput.title = "Due date";
+      dueDateInput.addEventListener("input", (event) => {
+        const newValue = event.target.value || "";
+        updateItemDueDate(index, newValue);
+        li.classList.toggle(
+          "overdue",
+          Boolean(state.items[index] && isItemOverdue(state.items[index]))
+        );
       });
 
       const removeButton = document.createElement("button");
@@ -344,6 +388,7 @@ export const createTodoList = ({
       li.appendChild(dragHandle);
       li.appendChild(checkbox);
       li.appendChild(input);
+      li.appendChild(dueDateInput);
       li.appendChild(removeButton);
 
       fragment.appendChild(li);
@@ -366,7 +411,7 @@ export const createTodoList = ({
 
   /**
    * Replace the current todo items and optionally trigger an autosave.
-   * @param {Array<{description?: string, completed?: boolean}>} items
+   * @param {Array<{description?: string, completed?: boolean, dueDate?: string}>} items
    * @param {{triggerSave?: boolean}} [options]
    */
   const setItems = (items, { triggerSave: shouldTriggerSave = true } = {}) => {
@@ -379,7 +424,7 @@ export const createTodoList = ({
 
   /** Append a blank todo item to the list. */
   const addTodoItem = () => {
-    state.items.push({ description: "", completed: false });
+    state.items.push({ description: "", completed: false, dueDate: "" });
     render();
     scheduleSave();
   };
@@ -402,6 +447,18 @@ export const createTodoList = ({
   const updateItemDescription = (index, description) => {
     if (state.items[index]) {
       state.items[index].description = description;
+      scheduleSave();
+    }
+  };
+
+  /**
+   * Update the due date for a todo item.
+   * @param {number} index
+   * @param {string} dueDate
+   */
+  const updateItemDueDate = (index, dueDate) => {
+    if (state.items[index]) {
+      state.items[index].dueDate = dueDate;
       scheduleSave();
     }
   };
@@ -450,12 +507,13 @@ export const createTodoList = ({
 
   /**
    * Return a serializable snapshot of the current todo list.
-   * @returns {Array<{description: string, completed: boolean}>}
+   * @returns {Array<{description: string, completed: boolean, dueDate: string}>}
    */
   const getTodoItems = () =>
     state.items.map((item) => ({
       completed: item.completed,
       description: item.description,
+      dueDate: item.dueDate,
     }));
 
   return {
@@ -464,6 +522,7 @@ export const createTodoList = ({
     addTodoItem,
     removeTodoItem,
     updateItemDescription,
+    updateItemDueDate,
     toggleItemCompletion,
     loadTodoItems,
     saveTodoItems,
