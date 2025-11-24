@@ -911,6 +911,15 @@ body.theme-light .toast--danger {
   margin: 0;
 }
 
+#knockouts .knockout-image {
+  width: min(90vw, 520px);
+  max-height: 70vh;
+  height: auto;
+  object-fit: contain;
+  display: block;
+  margin: 0 auto;
+}
+
 .footer {
   margin-top: auto;
   padding: 28px 20px;
