@@ -159,6 +159,37 @@ const getDueStatus = (item) => {
 };
 
 /**
+ * Compute the toast message for due date notifications to enable unit testing.
+ * @param {{description?: string, completed?: boolean}} item
+ * @param {{type?: string, label?: string}|null} statusOverride
+ * @returns {{copy: string, variant: "danger"|"warning"}|null}
+ */
+export const buildDueDateToastPayload = (item, statusOverride) => {
+  if (!item || item.completed) {
+    return null;
+  }
+
+  const status = statusOverride || getDueStatus(item);
+  if (
+    !status ||
+    status.type === "none" ||
+    status.type === "scheduled"
+  ) {
+    return null;
+  }
+
+  const label =
+    status.label && status.label.length
+      ? status.label.charAt(0).toLowerCase() + status.label.slice(1)
+      : "";
+  const description = item.description?.trim() || "Untitled task";
+
+  const variant = status.type === "overdue" ? "danger" : "warning";
+  const copy = label ? `${description} is ${label}` : description;
+  return { copy, variant };
+};
+
+/**
  * Factory that wires UI elements to todo list behavior and persistence.
  * @param {{
  *   listElement: HTMLElement,
@@ -283,32 +314,12 @@ export const createTodoList = ({
 
   /** Emit a toast when a due date becomes urgent. */
   const notifyDueDateStatus = (item, statusOverride) => {
-    if (!item) {
+    const payload = buildDueDateToastPayload(item, statusOverride);
+    if (!payload) {
       return;
     }
 
-    if (item.completed) {
-      return;
-    }
-
-    const status = statusOverride || getDueStatus(item);
-    if (
-      !status ||
-      status.type === "none" ||
-      status.type === "scheduled"
-    ) {
-      return;
-    }
-
-    const label =
-      status.label && status.label.length
-        ? status.label.charAt(0).toLowerCase() + status.label.slice(1)
-        : "";
-    const description = item.description?.trim() || "Untitled task";
-
-    const variant = status.type === "overdue" ? "danger" : "warning";
-    const copy = label ? `${description} is ${label}` : description;
-    showToast(copy, variant);
+    showToast(payload.copy, payload.variant);
   };
 
   /** Cancel any scheduled autosave to avoid stale data writes. */
