@@ -633,6 +633,41 @@ describe("createTodoList", () => {
     expect(toast.classList.contains("toast--warning")).toBe(true);
   });
 
+  test("due date input updates item status styles", () => {
+    jest.setSystemTime(new Date("2024-02-10T12:00:00Z"));
+
+    const todo = createTodoList({ listElement, modalElement, imageContainer });
+    todo.setItems(
+      [{ description: "finish report", completed: false, dueDate: "2024-02-15" }],
+      { triggerSave: false }
+    );
+
+    const item = listElement.querySelector("li");
+    const dueInput = item.querySelector(".task-date");
+    const pill = item.querySelector(".due-pill");
+
+    expect(item.classList.contains("due-soon")).toBe(false);
+    expect(item.classList.contains("overdue")).toBe(false);
+
+    dueInput.value = "2024-02-11";
+    dueInput.dispatchEvent(new Event("input", { bubbles: true }));
+
+    expect(todo.getTodoItems()[0].dueDate).toBe("2024-02-11");
+    expect(item.classList.contains("due-soon")).toBe(true);
+    expect(item.classList.contains("overdue")).toBe(false);
+    expect(pill.textContent).toBe("Due tomorrow");
+    expect(pill.classList.contains("due-pill--warning")).toBe(true);
+
+    dueInput.value = "2024-02-09";
+    dueInput.dispatchEvent(new Event("input", { bubbles: true }));
+
+    expect(todo.getTodoItems()[0].dueDate).toBe("2024-02-09");
+    expect(item.classList.contains("overdue")).toBe(true);
+    expect(item.classList.contains("due-soon")).toBe(false);
+    expect(pill.textContent).toBe("1 day overdue");
+    expect(pill.classList.contains("due-pill--alert")).toBe(true);
+  });
+
   test("toggling completion to false skips knockout modal", async () => {
     const todo = createTodoList({ listElement, modalElement, imageContainer });
     todo.setUid("user-1");
