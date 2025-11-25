@@ -396,7 +396,15 @@ export const createTodoList = ({
     const index = Math.floor(Math.random() * images.length);
     const imageFile = images[index];
 
-    state.imageContainer.innerHTML = `<p><img src="${imageFile}" width="500" height="500" /></p>`;
+    state.imageContainer.innerHTML = "";
+    const wrapper = document.createElement("p");
+    const image = document.createElement("img");
+    image.src = imageFile;
+    image.className = "knockout-image";
+    image.decoding = "async";
+    image.alt = "Celebration";
+    wrapper.appendChild(image);
+    state.imageContainer.appendChild(wrapper);
     state.modalElement.classList.add("open");
 
     setTimeout(() => {
