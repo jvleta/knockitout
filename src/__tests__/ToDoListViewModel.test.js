@@ -13,6 +13,7 @@ const updateDocMock = jest.fn(async () => {});
 const getDocMock = jest.fn();
 
 let createTodoList;
+let buildDueDateToastPayload;
 
 const firebaseModulePath = new URL("../firebase.js", import.meta.url).pathname;
 
@@ -27,7 +28,9 @@ beforeAll(async () => {
     getDoc: getDocMock,
   }));
 
-  ({ createTodoList } = await import("../ToDoListViewModel.js"));
+  ({ createTodoList, buildDueDateToastPayload } = await import(
+    "../ToDoListViewModel.js"
+  ));
 });
 
 describe("createTodoList", () => {
@@ -590,6 +593,81 @@ describe("createTodoList", () => {
     expect(jest.getTimerCount()).toBe(0);
   });
 
+  test("updateItemDueDate refreshes summary badges and emits a toast", () => {
+    jest.setSystemTime(new Date("2024-02-10T12:00:00Z"));
+
+    const dueSoonCountElement = document.createElement("span");
+    const overdueCountElement = document.createElement("span");
+    const chipElement = document.createElement("div");
+    const chipTextElement = document.createElement("span");
+    const toastContainer = document.createElement("div");
+
+    const todo = createTodoList({
+      listElement,
+      modalElement,
+      imageContainer,
+      summaryElements: {
+        dueSoonCountElement,
+        overdueCountElement,
+        chipElement,
+        chipTextElement,
+      },
+      toastContainer,
+    });
+
+    todo.setItems([{ description: "file taxes", completed: false }], {
+      triggerSave: false,
+    });
+
+    todo.updateItemDueDate(0, "2024-02-11");
+
+    expect(todo.getTodoItems()[0].dueDate).toBe("2024-02-11");
+    expect(dueSoonCountElement.textContent).toBe("1");
+    expect(overdueCountElement.textContent).toBe("0");
+    expect(chipElement.classList.contains("due-chip--warning")).toBe(true);
+    expect(chipTextElement.textContent).toBe("1 due soon");
+
+    const toast = toastContainer.querySelector(".toast");
+    expect(toast).not.toBeNull();
+    expect(toast.textContent).toBe("file taxes is due tomorrow");
+    expect(toast.classList.contains("toast--warning")).toBe(true);
+  });
+
+  test("due date input updates item status styles", () => {
+    jest.setSystemTime(new Date("2024-02-10T12:00:00Z"));
+
+    const todo = createTodoList({ listElement, modalElement, imageContainer });
+    todo.setItems(
+      [{ description: "finish report", completed: false, dueDate: "2024-02-15" }],
+      { triggerSave: false }
+    );
+
+    const item = listElement.querySelector("li");
+    const dueInput = item.querySelector(".task-date");
+    const pill = item.querySelector(".due-pill");
+
+    expect(item.classList.contains("due-soon")).toBe(false);
+    expect(item.classList.contains("overdue")).toBe(false);
+
+    dueInput.value = "2024-02-11";
+    dueInput.dispatchEvent(new Event("input", { bubbles: true }));
+
+    expect(todo.getTodoItems()[0].dueDate).toBe("2024-02-11");
+    expect(item.classList.contains("due-soon")).toBe(true);
+    expect(item.classList.contains("overdue")).toBe(false);
+    expect(pill.textContent).toBe("Due tomorrow");
+    expect(pill.classList.contains("due-pill--warning")).toBe(true);
+
+    dueInput.value = "2024-02-09";
+    dueInput.dispatchEvent(new Event("input", { bubbles: true }));
+
+    expect(todo.getTodoItems()[0].dueDate).toBe("2024-02-09");
+    expect(item.classList.contains("overdue")).toBe(true);
+    expect(item.classList.contains("due-soon")).toBe(false);
+    expect(pill.textContent).toBe("1 day overdue");
+    expect(pill.classList.contains("due-pill--alert")).toBe(true);
+  });
+
   test("toggling completion to false skips knockout modal", async () => {
     const todo = createTodoList({ listElement, modalElement, imageContainer });
     todo.setUid("user-1");
@@ -603,5 +681,47 @@ describe("createTodoList", () => {
 
     await flushAutosave();
     expect(updateDocMock).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe("buildDueDateToastPayload", () => {
+  test("returns null for missing or completed items", () => {
+    expect(buildDueDateToastPayload(null)).toBeNull();
+    expect(
+      buildDueDateToastPayload({ description: "done", completed: true })
+    ).toBeNull();
+  });
+
+  test("returns null for non-urgent statuses", () => {
+    expect(
+      buildDueDateToastPayload(
+        { description: "scheduled", completed: false },
+        { type: "scheduled", label: "Later" }
+      )
+    ).toBeNull();
+  });
+
+  test("builds warning payload for upcoming tasks", () => {
+    const payload = buildDueDateToastPayload(
+      { description: "Call mom", completed: false },
+      { type: "due-soon", label: "Due soon" }
+    );
+
+    expect(payload).toEqual({
+      copy: "Call mom is due soon",
+      variant: "warning",
+    });
+  });
+
+  test("builds danger payload with default title when overdue", () => {
+    const payload = buildDueDateToastPayload(
+      { description: "   ", completed: false },
+      { type: "overdue", label: "Overdue" }
+    );
+
+    expect(payload).toEqual({
+      copy: "Untitled task is overdue",
+      variant: "danger",
+    });
   });
 });
